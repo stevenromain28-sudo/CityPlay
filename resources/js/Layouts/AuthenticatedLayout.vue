@@ -22,7 +22,7 @@ const showingNavigationDropdown = ref(false);
                         <div class="flex">
                             <!-- Logo -->
                             <div class="flex shrink-0 items-center">
-                                <Link :href="route('dashboard')">
+                                <Link :href="$page.props.auth.user.roles.includes('admin') ? route('admin.dashboard') : route('player.dashboard')">
                                     <ApplicationLogo
                                         class="block h-9 w-auto fill-current text-gray-800"
                                     />
@@ -34,10 +34,18 @@ const showingNavigationDropdown = ref(false);
                                 class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
                             >
                                 <NavLink
-                                    :href="route('dashboard')"
-                                    :active="route().current('dashboard')"
+                                    v-if="$page.props.auth.user.roles.includes('admin')"
+                                    :href="route('admin.dashboard')"
+                                    :active="route().current('admin.dashboard')"
                                 >
-                                    Dashboard
+                                    Admin Dashboard
+                                </NavLink>
+                                <NavLink
+                                    v-if="$page.props.auth.user.roles.includes('player')"
+                                    :href="route('player.dashboard')"
+                                    :active="route().current('player.dashboard')"
+                                >
+                                    Jouer
                                 </NavLink>
                             </div>
                         </div>
@@ -132,21 +140,29 @@ const showingNavigationDropdown = ref(false);
                 </div>
 
                 <!-- Responsive Navigation Menu -->
-                <div
-                    :class="{
-                        block: showingNavigationDropdown,
-                        hidden: !showingNavigationDropdown,
-                    }"
-                    class="sm:hidden"
-                >
-                    <div class="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            :href="route('dashboard')"
-                            :active="route().current('dashboard')"
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
+            <div
+                :class="{
+                    block: showingNavigationDropdown,
+                    hidden: !showingNavigationDropdown,
+                }"
+                class="sm:hidden"
+            >
+                <div class="space-y-1 pb-3 pt-2">
+                    <ResponsiveNavLink
+                        v-if="$page.props.auth.user.roles.includes('admin')"
+                        :href="route('admin.dashboard')"
+                        :active="route().current('admin.dashboard')"
+                    >
+                        Admin Dashboard
+                    </ResponsiveNavLink>
+                    <ResponsiveNavLink
+                        v-if="$page.props.auth.user.roles.includes('player')"
+                        :href="route('player.dashboard')"
+                        :active="route().current('player.dashboard')"
+                    >
+                        Jouer
+                    </ResponsiveNavLink>
+                </div>
 
                     <!-- Responsive Settings Options -->
                     <div
