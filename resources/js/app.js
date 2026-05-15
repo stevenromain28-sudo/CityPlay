@@ -5,11 +5,14 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import PrimeVue from 'primevue/config';
+import Aura from '@primevue/themes/aura';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
+    progress: false, // On désactive le progress par défaut pour mettre le nôtre
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,
@@ -19,6 +22,14 @@ createInertiaApp({
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .use(PrimeVue, {
+                theme: {
+                    preset: Aura,
+                    options: {
+                        darkModeSelector: '.dark',
+                    }
+                }
+            })
             .mount(el);
     },
     progress: {

@@ -33,6 +33,13 @@ onMounted(() => {
         duration: 0.6
     }, '-=0.3');
 
+    // Simple fade for content sections instead of moving them
+    gsap.from('.content-section', {
+        opacity: 0,
+        duration: 1,
+        delay: 0.5
+    });
+
     // Background Sliding Animation
     gsap.to('.bg-slide', {
         xPercent: -20,
@@ -60,6 +67,23 @@ const leaveCard = (el) => {
         ease: 'power2.out'
     });
 };
+
+const invitationLink = ref('');
+const generateLink = () => {
+    if (invitationLink.value) {
+        navigator.clipboard.writeText(invitationLink.value);
+        alert('Lien copié !');
+        return;
+    }
+    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
+    invitationLink.value = window.location.origin + '/join/' + token;
+    
+    // Copy automatically on first generation
+    setTimeout(() => {
+        navigator.clipboard.writeText(invitationLink.value);
+        alert('Lien généré et copié dans le presse-papier !');
+    }, 100);
+};
 </script>
 
 <template>
@@ -69,7 +93,7 @@ const leaveCard = (el) => {
         <!-- Animated Background Slides -->
         <div class="absolute inset-0 z-0 opacity-5 pointer-events-none overflow-hidden">
             <div class="bg-slide flex w-[200%] h-full">
-                <img src="/images/backgrounds/img1.jpg" class="w-1/2 h-full object-cover">
+                <img src="/images/backgrounds/city.png" class="w-1/2 h-full object-cover">
                 <img src="/images/backgrounds/img2.jpg" class="w-1/2 h-full object-cover">
             </div>
         </div>
@@ -87,17 +111,19 @@ const leaveCard = (el) => {
 
             <nav class="flex-1 flex flex-col space-y-12">
                 <Link v-for="(item, i) in [
-                    {icon: 'home', label: 'Dashboard', active: true},
-                    {icon: 'villes', label: 'Villes'},
-                    {icon: 'lieux', label: 'Lieux'},
-                    {icon: 'puzzle', label: 'Énigmes'},
-                    {icon: 'users', label: 'Joueurs'}
-                ]" :key="i" href="#" class="sidebar-item group relative">
+                    {icon: 'home', label: 'Dashboard', active: route().current('admin.dashboard'), url: route('admin.dashboard')},
+                    {icon: 'villes', label: 'Villes', active: route().current('admin.villes.index'), url: route('admin.villes.index')},
+                    {icon: 'lieux', label: 'Lieux', active: route().current('admin.lieux.index'), url: route('admin.lieux.index')},
+                    {icon: 'puzzle', label: 'Énigmes', active: route().current('admin.enigmes.index'), url: route('admin.enigmes.index')},
+                    {icon: 'culture', label: 'Culture', active: route().current('admin.contenus-culturels.index'), url: route('admin.contenus-culturels.index')},
+                    {icon: 'users', label: 'Joueurs', active: false, url: '#'}
+                ]" :key="i" :href="item.url" class="sidebar-item group relative">
                     <div class="p-4 rounded-3xl transition-all duration-300 group-hover:scale-110" :class="item.active ? 'bg-white text-[#1DA1F2] shadow-xl' : 'text-white/80 hover:text-white'">
                         <svg v-if="item.icon==='home'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                         <svg v-if="item.icon==='villes'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                         <svg v-if="item.icon==='lieux'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         <svg v-if="item.icon==='puzzle'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+                        <svg v-if="item.icon==='culture'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                         <svg v-if="item.icon==='users'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     </div>
                     <span class="absolute left-full ml-6 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
@@ -157,51 +183,64 @@ const leaveCard = (el) => {
                             <h2 class="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-800">Ma <span class="text-[#1DA1F2]">Ville</span></h2>
                             <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">Votre terrain d'exploration personnel</p>
                         </div>
-                        <button v-if="!ma_ville" class="w-full sm:w-auto px-8 py-4 bg-yellow-400 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-yellow-100 hover:scale-105 transition-transform active:scale-95 flex items-center justify-center">
+                        <Link :href="route('admin.villes.index')" class="w-full sm:w-auto px-8 py-4 bg-yellow-400 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-yellow-100 hover:scale-105 transition-transform active:scale-95 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                            Créer ma ville
-                        </button>
+                            {{ ma_ville ? 'Gérer ma ville' : 'Créer ma ville' }}
+                        </Link>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                        <!-- Ville Card -->
-                        <div v-if="ma_ville"
-                             class="stat-card relative group overflow-hidden rounded-[3rem] h-96 cursor-pointer shadow-2xl transition-all duration-500 bg-white border-2 border-white"
-                             @mouseenter="hoverCard" @mouseleave="leaveCard">
-                            
-                            <img :src="ma_ville.banniere" 
-                                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
-                            
-                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-
-                            <div class="absolute bottom-12 left-10 right-10">
-                                <div class="flex items-center space-x-3 mb-4">
-                                    <span class="px-4 py-2 bg-yellow-400 text-white text-[10px] font-black uppercase rounded-xl tracking-widest">
-                                        {{ ma_ville.lieux_count || 0 }} LIEUX ACTIFS
-                                    </span>
+                        <!-- Ma Ville Section -->
+                        <div class="lg:col-span-2">
+                            <Link v-if="ma_ville" :href="route('admin.villes.index')" 
+                                 class="stat-card relative group overflow-hidden rounded-[3rem] h-full min-h-[400px] cursor-pointer shadow-2xl transition-all duration-500 bg-white border-2 border-white"
+                                 @mouseenter="hoverCard" @mouseleave="leaveCard">
+                                
+                                <!-- Background Image with Overlay -->
+                                <div class="absolute inset-0">
+                                    <img v-if="ma_ville.banniere" :src="ma_ville.banniere" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                                    <div v-else class="w-full h-full bg-gradient-to-br from-[#1DA1F2] to-blue-700"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
                                 </div>
-                                <h3 class="text-4xl font-black italic uppercase text-white tracking-tighter leading-none group-hover:text-yellow-400 transition-colors">
-                                    {{ ma_ville.nom }}
-                                </h3>
-                                <p class="text-white/70 text-sm font-bold mt-3 line-clamp-2 leading-tight">
-                                    {{ ma_ville.description }}
-                                </p>
-                            </div>
 
-                            <div class="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-4 group-hover:translate-y-0">
-                                <div class="w-14 h-14 bg-white text-[#1DA1F2] rounded-3xl flex items-center justify-center shadow-2xl">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                <!-- Content -->
+                                <div class="absolute inset-0 p-12 flex flex-col justify-between">
+                                    <div class="flex justify-between items-start">
+                                        <span class="px-6 py-2 bg-white/20 backdrop-blur-md text-white text-[10px] font-black uppercase rounded-xl tracking-[0.2em] border border-white/20">Votre Capitale</span>
+                                        <div class="w-14 h-14 bg-white text-[#1DA1F2] rounded-3xl flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-4 group-hover:translate-y-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 class="text-6xl font-black italic uppercase text-white tracking-tighter leading-none mb-4 group-hover:text-yellow-400 transition-colors">
+                                            {{ ma_ville.nom }}
+                                        </h3>
+                                        <div class="flex items-center space-x-6">
+                                            <div class="flex items-center text-white/80 space-x-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                <span class="text-sm font-bold uppercase tracking-widest">{{ ma_ville.lieux_count || 0 }} Lieux</span>
+                                            </div>
+                                            <div class="flex items-center text-white/80 space-x-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#1DA1F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                <span class="text-sm font-bold uppercase tracking-widest">Aventure Active</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </Link>
 
-                        <!-- Empty State if no city -->
-                        <div v-else class="stat-card relative overflow-hidden rounded-[3rem] h-96 border-4 border-dashed border-blue-100 flex flex-col items-center justify-center text-center p-10 bg-white/50">
-                            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-[#1DA1F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            <!-- Case: No City -->
+                            <div v-else class="h-full min-h-[400px] rounded-[3rem] bg-white border-4 border-dashed border-blue-100 flex flex-col items-center justify-center p-12 text-center group hover:border-[#1DA1F2] transition-colors">
+                                <div class="w-24 h-24 bg-blue-50 text-[#1DA1F2] rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                </div>
+                                <h3 class="text-3xl font-black italic uppercase text-slate-800 tracking-tighter mb-2">Aucune ville n'est sous votre règne</h3>
+                                <p class="text-slate-400 font-bold uppercase tracking-widest text-xs mb-8">Commencez par bâtir votre terrain de jeu</p>
+                                <Link :href="route('admin.villes.index')" class="px-10 py-5 bg-[#1DA1F2] text-white rounded-[2rem] font-black italic uppercase tracking-widest shadow-2xl shadow-blue-200 hover:scale-105 transition-transform">
+                                    Fonder ma ville
+                                </Link>
                             </div>
-                            <h3 class="text-2xl font-black italic text-slate-800 uppercase tracking-tighter mb-2">Aucune ville créée</h3>
-                            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Commencez par créer votre terrain de jeu</p>
                         </div>
                     </div>
                 </section>
@@ -226,6 +265,29 @@ const leaveCard = (el) => {
                         <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">{{ stat.label }}</p>
                     </div>
                 </div>
+
+                <!-- Invitation Section -->
+                <section class="content-section bg-white rounded-[3rem] p-10 shadow-xl shadow-blue-50 border border-blue-50">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div class="flex items-center space-x-6">
+                            <div class="w-20 h-20 bg-yellow-400 rounded-[2rem] flex items-center justify-center text-white shadow-xl rotate-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-3xl font-black italic uppercase text-slate-800 tracking-tighter">Recruter des <span class="text-[#1DA1F2]">Explorateurs</span></h3>
+                                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">Générez un lien d'accès épique pour vos joueurs</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4 w-full md:w-auto">
+                            <div class="flex-1 md:w-96 bg-blue-50 rounded-2xl px-6 py-4 font-bold text-slate-400 text-xs truncate border-2 border-dashed border-blue-100">
+                                {{ invitationLink || 'CLIQUEZ POUR GÉNÉRER' }}
+                            </div>
+                            <button @click="generateLink" class="px-8 py-4 bg-[#1DA1F2] text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95">
+                                {{ invitationLink ? 'Copier' : 'Générer' }}
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
