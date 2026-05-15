@@ -1,26 +1,261 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import { onMounted, ref } from 'vue';
+import gsap from 'gsap';
+
+const props = defineProps({
+    stats: Object,
+    ma_ville: Object,
+    recent_lieux: Array
+});
+
+const dashboardContainer = ref(null);
+const bgSlider = ref(null);
+
+onMounted(() => {
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    tl.from(dashboardContainer.value, {
+        opacity: 0,
+        duration: 0.8
+    })
+    .from('.sidebar-item', {
+        x: -50,
+        opacity: 0,
+        stagger: 0.1,
+        duration: 0.5
+    }, '-=0.4')
+    .from('.stat-card', {
+        y: 30,
+        opacity: 0,
+        stagger: 0.1,
+        duration: 0.6
+    }, '-=0.3');
+
+    // Background Sliding Animation
+    gsap.to('.bg-slide', {
+        xPercent: -20,
+        duration: 20,
+        repeat: -1,
+        yoyo: true,
+        ease: "linear"
+    });
+});
+
+const hoverCard = (el) => {
+    gsap.to(el.currentTarget, {
+        y: -10,
+        scale: 1.02,
+        duration: 0.4,
+        ease: 'back.out(1.7)'
+    });
+};
+
+const leaveCard = (el) => {
+    gsap.to(el.currentTarget, {
+        y: 0,
+        scale: 1,
+        duration: 0.4,
+        ease: 'power2.out'
+    });
+};
 </script>
 
 <template>
     <Head title="Admin Dashboard" />
 
-    <AuthenticatedLayout>
-        <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Tableau de Bord Administration
-            </h2>
-        </template>
+    <div ref="dashboardContainer" class="min-h-screen bg-[#F0F7FF] text-slate-800 flex overflow-hidden font-sans relative">
+        <!-- Animated Background Slides -->
+        <div class="absolute inset-0 z-0 opacity-5 pointer-events-none overflow-hidden">
+            <div class="bg-slide flex w-[200%] h-full">
+                <img src="/images/backgrounds/img1.jpg" class="w-1/2 h-full object-cover">
+                <img src="/images/backgrounds/img2.jpg" class="w-1/2 h-full object-cover">
+            </div>
+        </div>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        Bienvenue dans l'espace d'administration de CITYPLAY.
+        <!-- Sidebar -->
+        <aside class="hidden md:flex w-24 lg:w-32 bg-[#1DA1F2] flex-col items-center py-10 shadow-[5px_0_30px_rgba(29,161,242,0.1)] z-50">
+            <div class="mb-16">
+                <div class="w-16 h-16 bg-yellow-400 rounded-3xl flex items-center justify-center shadow-xl rotate-3 hover:rotate-0 transition-transform duration-300">
+                    <!-- Eiffel Tower / City Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.5,2H11.5L11,5H13L12.5,2M13.5,6H10.5L10,12H14L13.5,6M15,13H9L8,22H10L10.5,18H13.5L14,22H16L15,13Z" />
+                    </svg>
+                </div>
+            </div>
+
+            <nav class="flex-1 flex flex-col space-y-12">
+                <Link v-for="(item, i) in [
+                    {icon: 'home', label: 'Dashboard', active: true},
+                    {icon: 'villes', label: 'Villes'},
+                    {icon: 'lieux', label: 'Lieux'},
+                    {icon: 'puzzle', label: 'Énigmes'},
+                    {icon: 'users', label: 'Joueurs'}
+                ]" :key="i" href="#" class="sidebar-item group relative">
+                    <div class="p-4 rounded-3xl transition-all duration-300 group-hover:scale-110" :class="item.active ? 'bg-white text-[#1DA1F2] shadow-xl' : 'text-white/80 hover:text-white'">
+                        <svg v-if="item.icon==='home'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                        <svg v-if="item.icon==='villes'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        <svg v-if="item.icon==='lieux'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <svg v-if="item.icon==='puzzle'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+                        <svg v-if="item.icon==='users'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    </div>
+                    <span class="absolute left-full ml-6 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
+                        {{ item.label }}
+                    </span>
+                </Link>
+            </nav>
+
+            <div class="mt-auto">
+                <Link :href="route('logout')" method="post" as="button" class="p-4 text-white/60 hover:text-white hover:scale-110 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                </Link>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden z-10">
+            <!-- Header -->
+            <header class="h-20 md:h-28 flex items-center justify-between px-6 md:px-12 shrink-0 bg-white/80 backdrop-blur-md border-b border-blue-100">
+                <div class="flex items-center">
+                    <!-- Mobile Menu Button -->
+                    <button class="md:hidden mr-4 p-2 text-[#1DA1F2]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                    <div>
+                        <h1 class="text-2xl md:text-4xl font-black italic tracking-tighter text-[#1DA1F2] uppercase">
+                            City<span class="text-yellow-400">Play</span> <span class="text-slate-800 hidden sm:inline">Admin</span>
+                        </h1>
+                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1 hidden sm:block">Exploration Management Console</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 md:space-x-10">
+                    <div class="relative hidden xl:block">
+                        <input type="text" placeholder="RECHERCHER UNE AVENTURE..." class="bg-blue-50 border-none rounded-2xl py-4 px-14 w-96 text-xs font-bold tracking-widest text-slate-600 focus:ring-2 focus:ring-[#1DA1F2] transition-all placeholder:text-slate-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-6 top-1/2 -translate-y-1/2 text-[#1DA1F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 md:space-x-5 md:pl-10 md:border-l-2 md:border-blue-50">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-slate-800 font-black text-sm md:text-lg uppercase italic leading-tight">{{ $page.props.auth.user.name }}</p>
+                            <p class="text-[#1DA1F2] text-[10px] font-black uppercase tracking-widest">Master Admin</p>
+                        </div>
+                        <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[2rem] bg-yellow-400 p-0.5 md:p-1 shadow-lg shadow-yellow-200 rotate-3">
+                            <img src="https://ui-avatars.com/api/?name=Admin&background=1DA1F2&color=fff" class="w-full h-full rounded-xl md:rounded-[1.8rem] object-cover" alt="Avatar">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Body -->
+            <div class="flex-1 overflow-y-auto px-6 md:px-12 py-8 md:py-12 space-y-12 md:space-y-16 custom-scrollbar">
+                <!-- Villes Section -->
+                <section class="content-section">
+                    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-6">
+                        <div>
+                            <h2 class="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-800">Ma <span class="text-[#1DA1F2]">Ville</span></h2>
+                            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">Votre terrain d'exploration personnel</p>
+                        </div>
+                        <button v-if="!ma_ville" class="w-full sm:w-auto px-8 py-4 bg-yellow-400 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-yellow-100 hover:scale-105 transition-transform active:scale-95 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                            Créer ma ville
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <!-- Ville Card -->
+                        <div v-if="ma_ville"
+                             class="stat-card relative group overflow-hidden rounded-[3rem] h-96 cursor-pointer shadow-2xl transition-all duration-500 bg-white border-2 border-white"
+                             @mouseenter="hoverCard" @mouseleave="leaveCard">
+                            
+                            <img :src="ma_ville.banniere" 
+                                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                            
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
+
+                            <div class="absolute bottom-12 left-10 right-10">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <span class="px-4 py-2 bg-yellow-400 text-white text-[10px] font-black uppercase rounded-xl tracking-widest">
+                                        {{ ma_ville.lieux_count || 0 }} LIEUX ACTIFS
+                                    </span>
+                                </div>
+                                <h3 class="text-4xl font-black italic uppercase text-white tracking-tighter leading-none group-hover:text-yellow-400 transition-colors">
+                                    {{ ma_ville.nom }}
+                                </h3>
+                                <p class="text-white/70 text-sm font-bold mt-3 line-clamp-2 leading-tight">
+                                    {{ ma_ville.description }}
+                                </p>
+                            </div>
+
+                            <div class="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-4 group-hover:translate-y-0">
+                                <div class="w-14 h-14 bg-white text-[#1DA1F2] rounded-3xl flex items-center justify-center shadow-2xl">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty State if no city -->
+                        <div v-else class="stat-card relative overflow-hidden rounded-[3rem] h-96 border-4 border-dashed border-blue-100 flex flex-col items-center justify-center text-center p-10 bg-white/50">
+                            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-[#1DA1F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            </div>
+                            <h3 class="text-2xl font-black italic text-slate-800 uppercase tracking-tighter mb-2">Aucune ville créée</h3>
+                            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Commencez par créer votre terrain de jeu</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 md:gap-10">
+                    <div v-for="(stat, index) in [
+                        {label: 'Explorateurs', value: stats.users_count, color: 'bg-[#1DA1F2]', icon: 'users'},
+                        {label: 'Aventures', value: stats.sessions_count, color: 'bg-yellow-400', icon: 'map'},
+                        {label: 'Lieux', value: stats.lieux_count, color: 'bg-green-400', icon: 'location'},
+                        {label: 'Énigmes', value: stats.enigmes_count, color: 'bg-purple-400', icon: 'puzzle'}
+                    ]" :key="index" class="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-blue-50 border border-blue-50 group hover:scale-105 transition-transform duration-300">
+                        <div class="flex items-center justify-between mb-6">
+                            <div :class="`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center text-white shadow-lg`">
+                                <svg v-if="stat.icon==='users'" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                <svg v-if="stat.icon==='map'" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9" /></svg>
+                                <svg v-if="stat.icon==='location'" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                                <svg v-if="stat.icon==='puzzle'" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+                            </div>
+                        </div>
+                        <h4 class="text-4xl font-black italic tracking-tighter text-slate-800 leading-none">{{ stat.value }}</h4>
+                        <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">{{ stat.label }}</p>
                     </div>
                 </div>
             </div>
-        </div>
-    </AuthenticatedLayout>
+        </main>
+    </div>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
+
+.font-sans {
+    font-family: 'Outfit', sans-serif;
+}
+
+h1, h2, h3, h4, button, span {
+    font-family: 'Bangers', cursive;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #F0F7FF;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1DA1F2;
+    border-radius: 20px;
+    border: 3px solid #F0F7FF;
+}
+
+.bg-slide {
+    will-change: transform;
+}
+</style>
+

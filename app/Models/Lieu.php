@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Lieu extends Model
 {
-   public function ville()
+    protected $table = 'lieux';
+
+    public function ville()
 {
     return $this->belongsTo(Ville::class);
 }
