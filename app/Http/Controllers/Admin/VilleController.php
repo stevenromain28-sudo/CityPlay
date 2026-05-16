@@ -29,10 +29,11 @@ class VilleController extends Controller
             'population' => 'nullable|integer',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'rayon_action' => 'nullable|integer',
             'banniere' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude']);
+        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude', 'rayon_action']);
         $data['user_id'] = auth()->id();
         $data['slug'] = Str::slug($request->nom);
 
@@ -58,10 +59,11 @@ class VilleController extends Controller
             'population' => 'nullable|integer',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'rayon_action' => 'nullable|integer',
             'banniere' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude']);
+        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude', 'rayon_action']);
         $data['slug'] = Str::slug($request->nom);
 
         if ($request->hasFile('banniere')) {

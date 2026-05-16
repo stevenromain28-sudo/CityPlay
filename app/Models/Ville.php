@@ -11,13 +11,14 @@ class Ville extends Model
         'nom', 
         'slug', 
         'description', 
-        'history', 
+        'history',
         'pays', 
-        'population', 
-        'latitude', 
-        'longitude', 
+        'population',
         'banniere', 
-        'actif'
+        'actif',
+        'latitude',
+        'longitude',
+        'rayon_action'
     ];
 
     public function user()

@@ -32,11 +32,18 @@ const form = useForm({
     image_principale: null,
 });
 
+const searchQuery = ref('');
+
 const openNew = () => {
     form.reset();
     form.id = null;
-    form.latitude = props.ville?.latitude || 45.8992;
-    form.longitude = props.ville?.longitude || 6.1264;
+    if (tempMarker) {
+        form.latitude = tempMarker.getLatLng().lat;
+        form.longitude = tempMarker.getLatLng().lng;
+    } else {
+        form.latitude = props.ville?.latitude || 45.8992;
+        form.longitude = props.ville?.longitude || 6.1264;
+    }
     visible.value = true;
 };
 
@@ -51,6 +58,57 @@ const editLieu = (lieu) => {
     form.difficulte = lieu.difficulte;
     form.duree_estimee = lieu.duree_estimee;
     visible.value = true;
+    if (map && lieu.latitude && lieu.longitude) {
+        map.setView([lieu.latitude, lieu.longitude], 15);
+    }
+};
+
+const searchLocation = async () => {
+    if (!searchQuery.value) return;
+    
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lng = parseFloat(data[0].lon);
+            form.latitude = lat;
+            form.longitude = lng;
+            
+            if (!form.nom) form.nom = data[0].name || '';
+            
+            if (map) {
+                map.setView([lat, lng], 15);
+                if (tempMarker) {
+                    tempMarker.setLatLng([lat, lng]);
+                } else {
+                    tempMarker = L.marker([lat, lng], { 
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                }
+            }
+        } else {
+            alert("Lieu non trouvé");
+        }
+    } catch (e) {
+        console.error("Erreur de recherche", e);
+    }
+};
+
+const deleteLieu = () => {
+    if (confirm("Voulez-vous vraiment supprimer ce lieu et toutes les énigmes associées ?")) {
+        form.delete(route('admin.lieux.destroy', form.id), {
+            onSuccess: () => visible.value = false
+        });
+    }
 };
 
 const submit = () => {
@@ -102,8 +160,10 @@ onMounted(() => {
         }
     });
 
-    // Click on map to set coordinates
+    // Click on map to set coordinates and open modal directly
     map.on('click', (e) => {
+        form.reset();
+        form.id = null;
         form.latitude = e.latlng.lat;
         form.longitude = e.latlng.lng;
 
@@ -121,6 +181,7 @@ onMounted(() => {
                 })
             }).addTo(map);
         }
+        visible.value = true;
     });
 
     // FIX: Map invalidate size after initial load
@@ -190,7 +251,18 @@ onMounted(() => {
                 </div>
             </template>
             
-            <form @submit.prevent="submit" class="space-y-8 py-6 font-sans">
+            <form @submit.prevent="submit" class="space-y-6 py-4 font-sans px-2">
+                
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Recherche géographique</label>
+                    <div class="flex flex-col md:flex-row gap-4 mb-4">
+                        <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une adresse, un monument..." class="flex-1 !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
+                        <Button @click.prevent="searchLocation" class="!px-6 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-lg hover:scale-105 transition-transform">
+                            <span class="text-white font-black uppercase tracking-widest text-xs">Chercher</span>
+                        </Button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-3">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Nom du lieu</label>
@@ -238,9 +310,12 @@ onMounted(() => {
                     <FileUpload mode="basic" name="image_principale" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Sélectionner une photo" />
                 </div>
 
-                <div class="pt-6">
-                    <Button type="submit" :loading="form.processing" class="w-full !py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg">
+                <div class="pt-6 flex flex-col sm:flex-row gap-4">
+                    <Button type="submit" :loading="form.processing" class="flex-1 !py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg hover:scale-105 transition-transform">
                          <span class="text-lg font-black italic uppercase text-white tracking-widest">Enregistrer l'emplacement</span>
+                    </Button>
+                    <Button v-if="form.id" @click.prevent="deleteLieu" class="sm:w-auto !px-8 !py-5 !bg-red-500 hover:!bg-red-600 !border-none !rounded-2xl !shadow-lg transition-colors">
+                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Supprimer</span>
                     </Button>
                 </div>
             </form>
