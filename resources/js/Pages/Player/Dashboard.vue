@@ -37,7 +37,7 @@ onMounted(() => {
                 </div>
             </template>
 
-            <div class="py-12 px-6 lg:px-8">
+            <div class="py-8 md:py-12 px-4 md:px-6 lg:px-8">
                 <div class="max-w-7xl mx-auto">
                     <div class="mb-10">
                         <h3 class="text-gray-400 text-sm font-bold uppercase tracking-widest mb-4">Destinations Populaires</h3>
@@ -95,5 +95,20 @@ onMounted(() => {
 :deep(header) {
     background-color: transparent !important;
     box-shadow: none !important;
+}
+:deep(.responsive-menu-container) {
+    background-color: #0f1123 !important;
+    border-top: 1px solid rgba(255,255,255,0.05) !important;
+}
+:deep(.responsive-menu-container *) {
+    color: white !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    background-color: transparent !important;
+}
+:deep(.hamburger-btn) {
+    color: white !important;
+}
+:deep(.hamburger-btn:hover), :deep(.hamburger-btn:focus) {
+    background-color: rgba(255,255,255,0.1) !important;
 }
 </style>
