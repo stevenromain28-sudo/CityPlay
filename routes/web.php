@@ -68,6 +68,9 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::post('/detect-city', [PlayerController::class, 'detecterVille'])->name('detect-city');
     
     Route::post('/enigmes/{enigme}/validate-location', [GameController::class, 'validateLocation'])->name('enigmes.validate-location');
+    
+    // Auto-start game from dashboard
+    Route::post('/game/auto-start', [PlayerController::class, 'autoStart'])->name('game.auto-start');
 
     // Sessions de jeu
     Route::resource('sessions', SessionJeuController::class);
@@ -80,12 +83,14 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
         Route::get('/lieu/{lieu}', [PlayerController::class, 'lieuDashboard'])->name('game.lieu.dashboard');
         Route::post('/enigme/{enigme}/gps', [GameplayController::class, 'validerGPS'])->name('validate.gps');
         Route::post('/enigme/{enigme}/reponse', [GameplayController::class, 'soumettreReponse'])->name('submit.answer');
+        Route::post('/enigme/{enigme}/indice/{indice}/unlock', [GameplayController::class, 'debloquerIndice'])->name('unlock.indice');
     });
 
     // Placeholder routes for other pages
     Route::get('/map', [PlayerController::class, 'map'])->name('map');
     Route::get('/enigme', [PlayerController::class, 'enigmes'])->name('enigme');
-    Route::get('/leaderboard', function () { return Inertia::render('Player/Leaderboard'); })->name('leaderboard');
+    Route::get('/leaderboard', [PlayerController::class, 'leaderboard'])->name('leaderboard');
+    Route::get('/invitation', function () { return Inertia::render('Player/Invitation'); })->name('invitation');
     Route::get('/websocket', [PlayerController::class, 'websocket'])->name('websocket');
 });
 

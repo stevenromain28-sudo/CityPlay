@@ -9,6 +9,7 @@ use App\Models\SessionJeu;
 use App\Models\JoueurSession;
 use App\Models\TentativeEnigme;
 use App\Services\CityService;
+use App\Services\SessionJeuService;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -108,9 +109,27 @@ class PlayerController extends Controller
 
         $enigme = $query->first();
 
+        $indicesDebloquesIds = [];
+        $joueurScore = 0;
+
+        if ($enigme) {
+            $indicesDebloquesIds = \App\Models\IndiceDebloque::where('user_id', $user->id)
+                ->where('session_jeu_id', $session->id)
+                ->pluck('indice_id')
+                ->toArray();
+
+            $joueurSession = \App\Models\JoueurSession::where('user_id', $user->id)
+                ->where('session_jeu_id', $session->id)
+                ->first();
+            
+            $joueurScore = $joueurSession ? $joueurSession->score : 0;
+        }
+
         return Inertia::render('Player/Jeu', [
             'session' => $session->load('ville'),
             'enigme' => $enigme,
+            'indices_debloques' => $indicesDebloquesIds,
+            'joueur_score' => $joueurScore,
         ]);
     }
 
@@ -140,6 +159,24 @@ class PlayerController extends Controller
         return Inertia::render('Player/Enigme', [
             'lieu' => $lieu,
             'enigmes' => $lieu ? $lieu->enigmes()->with('indices')->orderBy('ordre')->get() : [],
+        ]);
+    }
+
+    public function leaderboard(Request $request)
+    {
+        // On récupère le score total par utilisateur en groupant les JoueurSession
+        $topJoueurs = \App\Models\User::select('users.id', 'users.name')
+            ->leftJoin('joueur_sessions', 'users.id', '=', 'joueur_sessions.user_id')
+            ->selectRaw('COALESCE(SUM(joueur_sessions.score), 0) as total_score')
+            ->selectRaw('COUNT(DISTINCT joueur_sessions.session_jeu_id) as sessions_jouees')
+            ->selectRaw('(SELECT COUNT(*) FROM tentatives_enigmes WHERE tentatives_enigmes.user_id = users.id AND succes = 1) as enigmes_resolues')
+            ->groupBy('users.id', 'users.name')
+            ->orderByDesc('total_score')
+            ->take(20)
+            ->get();
+
+        return Inertia::render('Player/Leaderboard', [
+            'top_joueurs' => $topJoueurs,
         ]);
     }
 
@@ -173,5 +210,50 @@ class PlayerController extends Controller
             'ville' => $ville,
             'message' => $ville ? "Ville détectée : {$ville->nom}" : "Aucune ville enregistrée à proximité de votre position."
         ]);
+    }
+
+    /**
+     * Démarrage automatique ou reprise d'une session depuis le menu principal.
+     */
+    public function autoStart(Request $request, SessionJeuService $sessionService)
+    {
+        $user = auth()->user();
+        $villeId = $request->input('ville_id');
+
+        // 1. Chercher une session active pour cet utilisateur (dans la ville si spécifiée, sinon n'importe où)
+        $query = SessionJeu::whereHas('joueurs', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->whereIn('statut', ['actif', 'en_attente', 'pause']);
+
+        if ($villeId) {
+            $query->where('ville_id', $villeId);
+        }
+
+        $session = $query->latest('updated_at')->first();
+
+        // 2. Si une session existe, on la reprend
+        if ($session) {
+            if ($session->statut === 'en_attente' || $session->statut === 'pause') {
+                $sessionService->reprendreSession($session);
+                if ($session->statut === 'en_attente') {
+                    $sessionService->commencerSession($session);
+                }
+            }
+            return redirect()->route('player.game.jeu', $session->id);
+        }
+
+        // 3. Si aucune session et on a une ville_id, on en crée une nouvelle
+        if ($villeId) {
+            $session = $sessionService->creerSession($user, [
+                'ville_id' => $villeId,
+                'mode' => 'cooperatif' // Par défaut
+            ]);
+            $sessionService->commencerSession($session);
+            
+            return redirect()->route('player.game.jeu', $session->id);
+        }
+
+        // 4. Sinon, impossible de démarrer
+        return back()->with('error', 'Impossible de démarrer : aucune ville détectée ou session active.');
     }
 }

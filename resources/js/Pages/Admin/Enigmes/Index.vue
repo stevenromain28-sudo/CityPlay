@@ -134,6 +134,9 @@ const editEnigme = (enigme) => {
 };
 
 const submit = () => {
+    // Nettoyer les indices vides pour éviter les erreurs de validation
+    form.indices = form.indices.filter(i => i.contenu && i.contenu.trim() !== '');
+
     if (form.id) {
         form.post(route('admin.enigmes.update', form.id), {
             onSuccess: () => visible.value = false
@@ -274,6 +277,14 @@ onMounted(() => {
             </template>
             
             <form @submit.prevent="submit" class="space-y-10 py-8 px-4 font-sans">
+                <!-- Message d'erreur global -->
+                <div v-if="Object.keys(form.errors).length > 0" class="bg-red-500/20 border-2 border-red-500 text-red-200 p-6 rounded-2xl mb-6 font-bold shadow-lg">
+                    <p class="text-xl font-black italic uppercase text-red-400 mb-2">Erreur de validation</p>
+                    <ul class="list-disc pl-5">
+                        <li v-for="(error, field) in form.errors" :key="field">{{ error }}</li>
+                    </ul>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Lieu associé</label>
@@ -323,8 +334,8 @@ onMounted(() => {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                     <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Réponse attendue</label>
-                        <InputText v-model="form.reponse" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse (séparés par des virgules)</label>
+                        <InputText v-model="form.reponse" placeholder="ex: secret,porte,mystere" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
                     </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Niveau (1-3)</label>
