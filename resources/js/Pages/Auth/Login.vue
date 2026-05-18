@@ -97,6 +97,10 @@ onMounted(() => {
                             class="w-full px-6 py-4 bg-white border-2 border-slate-300 rounded-full text-slate-700 font-bold placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-base shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]"
                             required
                         />
+                        <div v-if="form.errors.email" class="mt-2 px-6 py-2.5 bg-red-50 border-2 border-red-200 text-red-600 rounded-full text-xs font-bold flex items-center space-x-2 shadow-[inset_0_1px_2px_rgba(220,38,38,0.05)]">
+                            <span class="text-sm">⚠️</span>
+                            <span>{{ form.errors.email }}</span>
+                        </div>
                     </div>
 
                     <div class="relative">
@@ -107,6 +111,10 @@ onMounted(() => {
                             class="w-full px-6 py-4 bg-white border-2 border-slate-300 rounded-full text-slate-700 font-bold placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-base shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]"
                             required
                         />
+                        <div v-if="form.errors.password" class="mt-2 px-6 py-2.5 bg-red-50 border-2 border-red-200 text-red-600 rounded-full text-xs font-bold flex items-center space-x-2 shadow-[inset_0_1px_2px_rgba(220,38,38,0.05)]">
+                            <span class="text-sm">⚠️</span>
+                            <span>{{ form.errors.password }}</span>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between px-2 pt-1 text-sm font-bold text-slate-600">

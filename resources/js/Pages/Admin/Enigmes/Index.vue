@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref, onMounted ,computed} from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -9,22 +9,42 @@ import Select from 'primevue/select';
 import gsap from 'gsap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { watch } from 'vue';
 
 const props = defineProps({
     enigmes: Array,
-    lieux: Array
+    lieux: Array,
+    villes: Array,
+    isSuperAdmin: Boolean
 });
 
 const selectedLieuId = ref(null);
+const selectedVilleFilter = ref(null);
+const selectedFormVille = ref(null);
 
-const filteredEnigmes = computed(() => {
-    if (!selectedLieuId.value) return [];
-    return props.enigmes.filter(e => e.lieu_id === selectedLieuId.value);
+// Filtre les énigmes globales par ville (pour le SuperAdmin)
+const allFilteredEnigmes = computed(() => {
+    if (!props.isSuperAdmin || !selectedVilleFilter.value) {
+        return props.enigmes;
+    }
+    return props.enigmes.filter(e => e.lieu && e.lieu.ville_id === selectedVilleFilter.value);
 });
 
-const mainEnigmes = computed(() => filteredEnigmes.value.filter(e => !e.is_bonus).sort((a, b) => a.ordre - b.ordre));
-const bonusEnigmesList = computed(() => filteredEnigmes.value.filter(e => e.is_bonus).sort((a, b) => a.ordre - b.ordre));
+// Filtre les lieux affichés dans les onglets par ville (pour le SuperAdmin)
+const filteredLieuxTabs = computed(() => {
+    if (!props.isSuperAdmin || !selectedVilleFilter.value) {
+        return props.lieux;
+    }
+    return props.lieux.filter(l => l.ville_id === selectedVilleFilter.value);
+});
+
+// Énigmes du lieu sélectionné (parmi celles filtrées par ville)
+const enigmesOfSelectedLieu = computed(() => {
+    if (!selectedLieuId.value) return [];
+    return allFilteredEnigmes.value.filter(e => e.lieu_id === selectedLieuId.value);
+});
+
+const mainEnigmes = computed(() => enigmesOfSelectedLieu.value.filter(e => !e.is_bonus).sort((a, b) => a.ordre - b.ordre));
+const bonusEnigmesList = computed(() => enigmesOfSelectedLieu.value.filter(e => e.is_bonus).sort((a, b) => a.ordre - b.ordre));
 
 const usedLevels = computed(() => {
     if (!selectedLieuId.value) return [];
@@ -34,6 +54,43 @@ const usedLevels = computed(() => {
 });
 
 const visible = ref(false);
+
+const filteredLieuxForForm = computed(() => {
+    if (!props.isSuperAdmin || !selectedFormVille.value) {
+        return props.lieux;
+    }
+    return props.lieux.filter(l => l.ville_id === selectedFormVille.value);
+});
+
+const confirmModal = ref({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null
+});
+
+const notifyModal = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+
+const triggerConfirm = (title, message, callback) => {
+    confirmModal.value = {
+        show: true,
+        title,
+        message,
+        onConfirm: () => {
+            confirmModal.value.show = false;
+            callback();
+        }
+    };
+};
+
+const triggerNotify = (type, title, message) => {
+    notifyModal.value = { show: true, type, title, message };
+};
 
 const form = useForm({
     id: null,
@@ -130,6 +187,8 @@ const initMap = () => {
 const openNew = () => {
     form.reset();
     form.id = null;
+    selectedFormVille.value = null;
+    form.indices = [{ contenu: '', penalite: 5 }];
     form.lieu_id = selectedLieuId.value; // Pré-remplir le lieu si déjà sélectionné
     visible.value = true;
     setTimeout(initMap, 100);
@@ -149,6 +208,9 @@ const editEnigme = (enigme) => {
     form.verification_gps = !!enigme.verification_gps;
     form.is_bonus = !!enigme.is_bonus;
     form.indices = enigme.indices.map(i => ({ contenu: i.contenu, penalite: i.penalite }));
+    if (props.isSuperAdmin && enigme.lieu) {
+        selectedFormVille.value = enigme.lieu.ville_id;
+    }
     visible.value = true;
     setTimeout(initMap, 100);
 };
@@ -169,11 +231,18 @@ const submit = () => {
 };
 
 const deleteEnigme = () => {
-    if (confirm("Voulez-vous vraiment détruire cette énigme des annales ?")) {
-        form.delete(route('admin.enigmes.destroy', form.id), {
-            onSuccess: () => visible.value = false
-        });
-    }
+    triggerConfirm(
+        "Détruire l'énigme ?",
+        "Voulez-vous vraiment détruire cette énigme des annales de CityPlay ?",
+        () => {
+            form.delete(route('admin.enigmes.destroy', form.id), {
+                onSuccess: () => {
+                    visible.value = false;
+                    triggerNotify('success', 'Énigme supprimée', 'L\'énigme a été supprimée avec succès des annales.');
+                }
+            });
+        }
+    );
 };
 
 // Autocenter and auto-fill coordinates when a lieu is selected
@@ -246,9 +315,28 @@ onMounted(() => {
                 </Button>
             </div>
 
+            <!-- SuperAdmin Global City Filter Bar -->
+            <div v-if="isSuperAdmin" class="mb-10 bg-white/5 backdrop-blur-md rounded-[2rem] p-6 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-yellow-400/20 text-yellow-400 rounded-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black italic uppercase text-white tracking-tight">Filtre territorial</h3>
+                        <p class="text-white/40 text-xs font-bold uppercase tracking-wider">Sélectionner une cité pour concentrer le grimoire</p>
+                    </div>
+                </div>
+                <div class="w-full sm:w-72">
+                    <select v-model="selectedVilleFilter" class="w-full rounded-xl bg-white/10 border-white/10 p-3 font-bold text-white focus:ring-2 focus:ring-[#1DA1F2] appearance-none cursor-pointer">
+                        <option :value="null" class="bg-[#0a0c1b]">Toutes les Cités du Royaume</option>
+                        <option v-for="ville in villes" :key="ville.id" :value="ville.id" class="bg-[#0a0c1b]">{{ ville.nom }}</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Lieu Selector -->
             <div class="flex flex-wrap gap-4 mb-12">
-                <button v-for="lieu in lieux" :key="lieu.id"
+                <button v-for="lieu in filteredLieuxTabs" :key="lieu.id"
                         @click="selectedLieuId = lieu.id"
                         :class="[
                             'px-6 py-3 rounded-2xl font-black uppercase tracking-widest transition-all border-2',
@@ -256,7 +344,7 @@ onMounted(() => {
                                 ? 'bg-[#1DA1F2] border-[#1DA1F2] text-white shadow-lg shadow-blue-500/50'
                                 : 'bg-white/5 border-white/10 text-white/60 hover:border-white/30'
                         ]">
-                    {{ lieu.nom }}
+                    {{ lieu.nom }} {{ isSuperAdmin && lieu.ville ? `(${lieu.ville.nom})` : '' }}
                 </button>
             </div>
 
@@ -271,20 +359,43 @@ onMounted(() => {
 
                     <div v-if="mainEnigmes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                         <div v-for="enigme in mainEnigmes" :key="enigme.id" @click="editEnigme(enigme)" class="enigme-card group bg-white/5 backdrop-blur-xl rounded-[3rem] p-8 border-2 border-white/10 hover:border-[#1DA1F2]/50 transition-all cursor-pointer shadow-2xl relative">
+                            <!-- Sketch/Drawing Card Style -->
                             <div class="absolute -top-4 -right-4 w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
                                 <span class="text-white font-black text-xl italic">{{ enigme.ordre }}</span>
                             </div>
+
                             <div class="aspect-video rounded-2xl overflow-hidden mb-6 border-2 border-white/5 bg-slate-900">
                                 <img v-if="enigme.image" :src="enigme.image" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700">
                                 <div v-else class="w-full h-full flex items-center justify-center text-white/10">
                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 </div>
                             </div>
-                            <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-[#1DA1F2] transition-colors">{{ enigme.titre }}</h3>
-                            <p class="text-white/40 text-sm font-bold line-clamp-3 italic mt-4">"{{ enigme.contenu }}"</p>
-                            <div class="mt-6 flex items-center justify-between text-[10px] font-black uppercase text-white/20 tracking-widest">
-                                <span>NIVEAU {{ enigme.niveau }}</span>
-                                <span>{{ enigme.indices.length }} INDICES</span>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-3 py-1 bg-white/10 text-white/40 text-[10px] font-black uppercase rounded-lg tracking-widest">{{ enigme.lieu.nom }} {{ enigme.lieu.ville ? `• ${enigme.lieu.ville.nom}` : '' }}</span>
+                                    <div class="flex gap-2">
+                                        <span v-if="enigme.is_bonus" class="px-3 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-lg">Bonus</span>
+                                        <span class="px-3 py-1 bg-yellow-400/20 text-yellow-400 text-[10px] font-black uppercase rounded-lg">Niveau {{ enigme.niveau }}</span>
+                                    </div>
+                                </div>
+                                <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-[#1DA1F2] transition-colors">{{ enigme.titre }}</h3>
+                                <p class="text-white/40 text-sm font-bold line-clamp-3 leading-relaxed italic">"{{ enigme.contenu }}"</p>
+                                
+                                <!-- Audio Player Small -->
+                                <div v-if="enigme.audio" class="mt-4 flex items-center bg-white/5 rounded-2xl p-3 border border-white/10">
+                                    <audio :src="enigme.audio" controls class="h-8 w-full filter invert hue-rotate-180 opacity-50 hover:opacity-100 transition-opacity"></audio>
+                                </div>
+                            </div>
+
+                            <!-- Indices Parchment Preview -->
+                            <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                                <div class="flex -space-x-3">
+                                    <div v-for="i in enigme.indices.length" :key="i" class="w-10 h-12 bg-[#F5DEB3] rounded-sm shadow-lg border-x border-amber-900/20 flex flex-col items-center justify-center rotate-[-10deg] even:rotate-[10deg]">
+                                        <div class="w-6 h-[1px] bg-amber-900/20 my-0.5" v-for="j in 3" :key="j"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-black text-white/20 uppercase tracking-widest">{{ enigme.indices.length }} INDICES SCÉLLÉS</span>
                             </div>
                         </div>
                     </div>
@@ -309,8 +420,32 @@ onMounted(() => {
                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 </div>
                             </div>
-                            <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-purple-400 transition-colors">{{ enigme.titre }}</h3>
-                            <p class="text-white/40 text-sm font-bold line-clamp-3 italic mt-4">"{{ enigme.contenu }}"</p>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-3 py-1 bg-white/10 text-white/40 text-[10px] font-black uppercase rounded-lg tracking-widest">{{ enigme.lieu.nom }} {{ enigme.lieu.ville ? `• ${enigme.lieu.ville.nom}` : '' }}</span>
+                                    <div class="flex gap-2">
+                                        <span class="px-3 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-lg">Bonus</span>
+                                        <span class="px-3 py-1 bg-yellow-400/20 text-yellow-400 text-[10px] font-black uppercase rounded-lg">Niveau {{ enigme.niveau }}</span>
+                                    </div>
+                                </div>
+                                <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-purple-400 transition-colors">{{ enigme.titre }}</h3>
+                                <p class="text-white/40 text-sm font-bold line-clamp-3 leading-relaxed italic">"{{ enigme.contenu }}"</p>
+                                
+                                <!-- Audio Player Small -->
+                                <div v-if="enigme.audio" class="mt-4 flex items-center bg-white/5 rounded-2xl p-3 border border-white/10">
+                                    <audio :src="enigme.audio" controls class="h-8 w-full filter invert hue-rotate-180 opacity-50 hover:opacity-100 transition-opacity"></audio>
+                                </div>
+                            </div>
+
+                            <!-- Indices Parchment Preview -->
+                            <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                                <div class="flex -space-x-3">
+                                    <div v-for="i in enigme.indices.length" :key="i" class="w-10 h-12 bg-[#F5DEB3] rounded-sm shadow-lg border-x border-amber-900/20 flex flex-col items-center justify-center rotate-[-10deg] even:rotate-[10deg]">
+                                        <div class="w-6 h-[1px] bg-amber-900/20 my-0.5" v-for="j in 3" :key="j"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-black text-white/20 uppercase tracking-widest">{{ enigme.indices.length }} INDICES SCÉLLÉS</span>
+                            </div>
                         </div>
                     </div>
                     <div v-else class="text-center py-12 bg-purple-900/5 rounded-[3rem] border-2 border-dashed border-purple-500/10">
@@ -320,7 +455,7 @@ onMounted(() => {
             </div>
             <div v-else class="text-center py-32">
                 <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </div>
                 <h3 class="text-2xl font-black italic uppercase text-white/40 tracking-widest">Sélectionnez un Lieu pour voir ses secrets</h3>
             </div>
@@ -343,12 +478,19 @@ onMounted(() => {
                     </ul>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="grid grid-cols-1" :class="[isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2', 'gap-10']">
+                    <div v-if="isSuperAdmin" class="space-y-4">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
+                        <select v-model="selectedFormVille" class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
+                            <option :value="null">Toutes les cités...</option>
+                            <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                        </select>
+                    </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Lieu associé</label>
                         <select v-model="form.lieu_id" class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
                             <option value="" disabled>Choisir un lieu...</option>
-                            <option v-for="lieu in lieux" :key="lieu.id" :value="lieu.id">{{ lieu.nom }}</option>
+                            <option v-for="lieu in filteredLieuxForForm" :key="lieu.id" :value="lieu.id">{{ lieu.nom }} {{ isSuperAdmin && lieu.ville ? `(${lieu.ville.nom})` : '' }}</option>
                         </select>
                     </div>
                     <div class="space-y-4">
@@ -465,6 +607,59 @@ onMounted(() => {
                 </div>
             </form>
         </Dialog>
+
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                        D'accord
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOM CONFIRMATION MODAL -->
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-600 mb-3 relative z-10">
+                        {{ confirmModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+
+                    <div class="flex space-x-3 relative z-10">
+                        <button @click="confirmModal.show = false" 
+                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                            Annuler
+                        </button>
+                        <button @click="confirmModal.onConfirm" 
+                                class="flex-1 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 hover:scale-105 active:scale-95 transition-all">
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -486,7 +681,6 @@ onMounted(() => {
     color: white !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 h2, h3, h4, span, button { font-family: 'Bangers', cursive; }
 
 .custom-scrollbar::-webkit-scrollbar {

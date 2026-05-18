@@ -15,19 +15,40 @@ class EnigmeController extends Controller
 {
     public function index()
     {
+        $isSuperAdmin = auth()->user()->hasRole('super_admin');
+        if ($isSuperAdmin) {
+            $villes = Ville::all();
+            $lieux = Lieu::with('ville')->get();
+            $enigmes = Enigme::with(['lieu.ville', 'indices'])->get();
+
+            return Inertia::render('Admin/Enigmes/Index', [
+                'enigmes' => $enigmes,
+                'lieux' => $lieux,
+                'villes' => $villes,
+                'isSuperAdmin' => true
+            ]);
+        }
+
         $ville = Ville::where('user_id', auth()->id())->first();
         if (!$ville) {
-            return Inertia::render('Admin/Enigmes/Index', ['enigmes' => [], 'lieux' => []]);
+            return Inertia::render('Admin/Enigmes/Index', [
+                'enigmes' => [],
+                'lieux' => [],
+                'villes' => [],
+                'isSuperAdmin' => false
+            ]);
         }
 
         $lieux = Lieu::where('ville_id', $ville->id)->get();
         $enigmes = Enigme::whereIn('lieu_id', $lieux->pluck('id'))
-            ->with(['lieu', 'indices'])
+            ->with(['lieu.ville', 'indices'])
             ->get();
 
         return Inertia::render('Admin/Enigmes/Index', [
             'enigmes' => $enigmes,
-            'lieux' => $lieux
+            'lieux' => $lieux,
+            'villes' => [],
+            'isSuperAdmin' => false
         ]);
     }
 

@@ -69,11 +69,22 @@ const leaveCard = (el) => {
     });
 };
 
+const notifyModal = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+
+const triggerNotify = (type, title, message) => {
+    notifyModal.value = { show: true, type, title, message };
+};
+
 const invitationLink = ref('');
 const generateLink = () => {
     if (invitationLink.value) {
         navigator.clipboard.writeText(invitationLink.value);
-        alert('Lien copié !');
+        triggerNotify('success', 'Lien Copié', 'Le lien d\'invitation a été copié dans votre presse-papier !');
         return;
     }
     const token = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -82,7 +93,7 @@ const generateLink = () => {
     // Copy automatically on first generation
     setTimeout(() => {
         navigator.clipboard.writeText(invitationLink.value);
-        alert('Lien généré et copié dans le presse-papier !');
+        triggerNotify('success', 'Lien Généré', 'Le lien d\'invitation épique a été généré et copié dans le presse-papier !');
     }, 100);
 };
 </script>
@@ -121,7 +132,7 @@ const generateLink = () => {
                     {icon: 'lieux', label: 'Lieux', active: route().current('admin.lieux.index'), url: route('admin.lieux.index')},
                     {icon: 'puzzle', label: 'Énigmes', active: route().current('admin.enigmes.index'), url: route('admin.enigmes.index')},
                     {icon: 'culture', label: 'Culture', active: route().current('admin.contenus-culturels.index'), url: route('admin.contenus-culturels.index')},
-                    {icon: 'users', label: 'Joueurs', active: false, url: '#'}
+                    {icon: 'users', label: $page.props.auth.user.roles.includes('super_admin') ? 'Utilisateurs' : 'Joueurs', active: route().current('admin.users.index'), url: $page.props.auth.user.roles.includes('super_admin') ? route('admin.users.index') : '#'}
                 ]" :key="i" :href="item.url" class="sidebar-item group relative">
                     <div class="p-4 rounded-3xl transition-all duration-300 group-hover:scale-110" :class="item.active ? 'bg-white text-[#1DA1F2] shadow-xl' : 'text-white/80 hover:text-white'">
                         <svg v-if="item.icon==='home'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
@@ -170,7 +181,9 @@ const generateLink = () => {
                     <div class="flex items-center space-x-3 md:space-x-5 md:pl-10 md:border-l-2 md:border-blue-50">
                         <div class="text-right hidden sm:block">
                             <p class="text-slate-800 font-black text-sm md:text-lg uppercase italic leading-tight">{{ $page.props.auth.user.name }}</p>
-                            <p class="text-[#1DA1F2] text-[10px] font-black uppercase tracking-widest">Master Admin</p>
+                            <p class="text-[#1DA1F2] text-[10px] font-black uppercase tracking-widest">
+                                {{ $page.props.auth.user.roles.includes('super_admin') ? 'Super Admin' : 'Master Admin' }}
+                            </p>
                         </div>
                         <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[2rem] bg-yellow-400 p-0.5 md:p-1 shadow-lg shadow-yellow-200 rotate-3">
                             <img src="https://ui-avatars.com/api/?name=Admin&background=1DA1F2&color=fff" class="w-full h-full rounded-xl md:rounded-[1.8rem] object-cover" alt="Avatar">
@@ -294,12 +307,33 @@ const generateLink = () => {
                 </section>
             </div>
         </main>
+
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                        D'accord
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
-
 .font-sans {
     font-family: 'Outfit', sans-serif;
 }

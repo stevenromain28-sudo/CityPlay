@@ -13,9 +13,19 @@ class VilleController extends Controller
 {
     public function index()
     {
+        $isSuperAdmin = auth()->user()->hasRole('super_admin');
+        if ($isSuperAdmin) {
+            return Inertia::render('Admin/Villes/Index', [
+                'villes' => Ville::withCount('lieux')->with('user')->get(),
+                'admins' => \App\Models\User::role('admin')->get(),
+                'isSuperAdmin' => true
+            ]);
+        }
+
         $ville = Ville::withCount('lieux')->where('user_id', auth()->id())->first();
         return Inertia::render('Admin/Villes/Index', [
-            'ville' => $ville
+            'ville' => $ville,
+            'isSuperAdmin' => false
         ]);
     }
 
@@ -31,10 +41,13 @@ class VilleController extends Controller
             'longitude' => 'nullable|numeric',
             'rayon_action' => 'nullable|integer',
             'banniere' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
-        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude', 'rayon_action']);
-        $data['user_id'] = auth()->id();
+        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude', 'rayon_action', 'user_id']);
+        if (!auth()->user()->hasRole('super_admin')) {
+            $data['user_id'] = auth()->id();
+        }
         $data['slug'] = Str::slug($request->nom);
 
         if ($request->hasFile('banniere')) {
@@ -61,9 +74,13 @@ class VilleController extends Controller
             'longitude' => 'nullable|numeric',
             'rayon_action' => 'nullable|integer',
             'banniere' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
-        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude', 'rayon_action']);
+        $data = $request->only(['nom', 'description', 'history', 'pays', 'population', 'latitude', 'longitude', 'rayon_action', 'user_id']);
+        if (!auth()->user()->hasRole('super_admin')) {
+            unset($data['user_id']); // regular admin cannot reassign
+        }
         $data['slug'] = Str::slug($request->nom);
 
         if ($request->hasFile('banniere')) {
@@ -79,5 +96,21 @@ class VilleController extends Controller
         $ville->update($data);
 
         return redirect()->back()->with('success', 'Ville mise à jour avec succès !');
+    }
+
+    public function destroy(Ville $ville)
+    {
+        if (!auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Action non autorisée');
+        }
+
+        if ($ville->banniere && !str_contains($ville->banniere, 'backgrounds')) {
+            $oldPath = str_replace('/storage/', '', $ville->banniere);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $ville->delete();
+
+        return redirect()->back()->with('success', 'Ville supprimée avec succès !');
     }
 }
