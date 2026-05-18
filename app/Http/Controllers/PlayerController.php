@@ -10,6 +10,7 @@ use App\Models\JoueurSession;
 use App\Models\TentativeEnigme;
 use App\Services\CityService;
 use App\Services\SessionJeuService;
+use App\Models\ProgressionEnigme;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -88,29 +89,79 @@ class PlayerController extends Controller
         $lat = (float) $request->query('lat');
         $lng = (float) $request->query('lng');
         
-        // On cherche les énigmes actives pour cette session qui ne sont pas encore réussies
-        $query = Enigme::whereHas('lieu', function($q) use ($session) {
-            $q->where('ville_id', $session->ville_id);
-        })
-        ->whereDoesntHave('tentatives', function($q) use ($user) {
-            $q->where('user_id', $user->id)->where('succes', true);
-        })
-        ->with('indices');
+        $enigme = null;
 
-        // Si on a les coordonnées du joueur, on ordonne par distance (formule de Haversine via MySQL)
-        if ($lat && $lng) {
-            // S'assure de sélectionner toutes les colonnes d'Enigme et ajoute la distance
-            $query->selectRaw('enigmes.*, ( 6371 * acos( cos( radians(?) ) * cos( radians( enigmes.latitude ) ) * cos( radians( enigmes.longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( enigmes.latitude ) ) ) ) AS distance', [$lat, $lng, $lat])
-                  ->orderBy('distance')
-                  ->orderBy('ordre');
-        } else {
-            $query->orderBy('ordre');
+        // 1. Vérifier si une énigme spécifique est déjà définie dans la session
+        if ($session->current_enigme_id) {
+            $enigme = Enigme::with('indices')->find($session->current_enigme_id);
+            // Vérifier si elle est déjà résolue par ce joueur
+            $dejaResolue = TentativeEnigme::where('user_id', $user->id)
+                ->where('enigme_id', $session->current_enigme_id)
+                ->where('succes', true)
+                ->exists();
+            
+            if ($dejaResolue) {
+                $enigme = null; // On passera à la suite
+            }
         }
 
-        $enigme = $query->first();
+        // 2. Vérifier si le joueur a des bonus en cours
+        if (!$enigme) {
+            $bonusEnCours = ProgressionEnigme::where('session_jeu_id', $session->id)
+                ->where('user_id', $user->id)
+                ->where('wants_bonus', true)
+                ->whereNotNull('gps_validated_at')
+                ->latest()
+                ->first();
+
+            if ($bonusEnCours) {
+                $bonusQuery = Enigme::where('lieu_id', $bonusEnCours->enigme->lieu_id)
+                    ->where('is_bonus', true)
+                    ->whereDoesntHave('tentatives', function($q) use ($user) {
+                        $q->where('user_id', $user->id)->where('succes', true);
+                    })
+                    ->orderBy('ordre');
+                
+                $nextBonus = $bonusQuery->first();
+                if ($nextBonus) {
+                    $enigme = $nextBonus;
+                }
+            }
+        }
+
+        // 3. Sinon, on ne choisit PAS d'énigme automatiquement
+        if (!$enigme) {
+            // On cherche le lieu le plus proche pour rediriger l'utilisateur vers son dashboard
+            // afin qu'il puisse choisir son niveau d'énigme.
+            $lieuQuery = Lieu::where('ville_id', $session->ville_id);
+            
+            if ($lat && $lng) {
+                $lieuQuery->selectRaw('lieux.*, ( 6371 * acos( cos( radians(?) ) * cos( radians( lieux.latitude ) ) * cos( radians( lieux.longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( lieux.latitude ) ) ) ) AS distance', [$lat, $lng, $lat])
+                          ->orderBy('distance');
+            }
+            
+            $lieuProche = $lieuQuery->first();
+
+            if ($lieuProche) {
+                return redirect()->route('player.lieu.dashboard', [
+                    'ville' => $session->ville_id,
+                    'lieu' => $lieuProche->id
+                ])->with('info', 'Choisissez votre niveau d\'énigme pour commencer !');
+            }
+
+            // Si vraiment aucun lieu trouvé (cas rare), on reste sur un fallback ou on cherche quand même une énigme
+            $enigme = Enigme::whereHas('lieu', function($q) use ($session) {
+                $q->where('ville_id', $session->ville_id);
+            })->where('is_bonus', false)->orderBy('ordre')->first();
+        }
+
+        if ($enigme && $session->current_enigme_id !== $enigme->id) {
+            $session->update(['current_enigme_id' => $enigme->id]);
+        }
 
         $indicesDebloquesIds = [];
         $joueurScore = 0;
+        $progression = null;
 
         if ($enigme) {
             $indicesDebloquesIds = \App\Models\IndiceDebloque::where('user_id', $user->id)
@@ -123,6 +174,11 @@ class PlayerController extends Controller
                 ->first();
             
             $joueurScore = $joueurSession ? $joueurSession->score : 0;
+
+            $progression = ProgressionEnigme::where('user_id', $user->id)
+                ->where('session_jeu_id', $session->id)
+                ->where('enigme_id', $enigme->id)
+                ->first();
         }
 
         return Inertia::render('Player/Jeu', [
@@ -130,6 +186,7 @@ class PlayerController extends Controller
             'enigme' => $enigme,
             'indices_debloques' => $indicesDebloquesIds,
             'joueur_score' => $joueurScore,
+            'progression' => $progression,
         ]);
     }
 
@@ -219,6 +276,8 @@ class PlayerController extends Controller
     {
         $user = auth()->user();
         $villeId = $request->input('ville_id');
+        $lat = $request->input('lat');
+        $lng = $request->input('lng');
 
         // 1. Chercher une session active pour cet utilisateur (dans la ville si spécifiée, sinon n'importe où)
         $query = SessionJeu::whereHas('joueurs', function ($q) use ($user) {
@@ -239,7 +298,7 @@ class PlayerController extends Controller
                     $sessionService->commencerSession($session);
                 }
             }
-            return redirect()->route('player.game.jeu', $session->id);
+            return redirect()->route('player.game.jeu', ['session' => $session->id, 'lat' => $lat, 'lng' => $lng]);
         }
 
         // 3. Si aucune session et on a une ville_id, on en crée une nouvelle
@@ -250,7 +309,7 @@ class PlayerController extends Controller
             ]);
             $sessionService->commencerSession($session);
             
-            return redirect()->route('player.game.jeu', $session->id);
+            return redirect()->route('player.game.jeu', ['session' => $session->id, 'lat' => $lat, 'lng' => $lng]);
         }
 
         // 4. Sinon, impossible de démarrer

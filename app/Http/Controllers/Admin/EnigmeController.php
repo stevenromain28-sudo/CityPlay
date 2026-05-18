@@ -46,12 +46,34 @@ class EnigmeController extends Controller
             'longitude' => 'nullable|numeric',
             'rayon' => 'nullable|integer',
             'verification_gps' => 'nullable|boolean',
+            'is_bonus' => 'nullable|boolean',
             'indices' => 'nullable|array',
             'indices.*.contenu' => 'required|string',
             'indices.*.penalite' => 'required|integer|min:0',
         ]);
 
         $data = $request->except('indices');
+
+        // Validation personnalisée : Unicité du niveau pour les énigmes principales d'un lieu
+        if (!($data['is_bonus'] ?? false)) {
+            $exists = Enigme::where('lieu_id', $data['lieu_id'])
+                ->where('niveau', $data['niveau'])
+                ->where('is_bonus', false)
+                ->exists();
+
+            if ($exists) {
+                return redirect()->back()->withErrors(['niveau' => 'Une énigme principale de niveau ' . $data['niveau'] . ' existe déjà pour ce lieu. Chaque énigme doit avoir un niveau unique (1, 2 ou 3).']);
+            }
+
+            // Optionnel : Vérifier qu'il n'y a pas plus de 3 énigmes principales
+            $count = Enigme::where('lieu_id', $data['lieu_id'])
+                ->where('is_bonus', false)
+                ->count();
+            
+            if ($count >= 3) {
+                return redirect()->back()->withErrors(['lieu_id' => 'Ce lieu possède déjà 3 énigmes principales. Vous ne pouvez ajouter que des énigmes bonus.']);
+            }
+        }
         
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('enigmes/images', 'public');
@@ -91,9 +113,23 @@ class EnigmeController extends Controller
             'longitude' => 'nullable|numeric',
             'rayon' => 'nullable|integer',
             'verification_gps' => 'nullable|boolean',
+            'is_bonus' => 'nullable|boolean',
         ]);
 
         $data = $request->all();
+
+        // Validation personnalisée : Unicité du niveau pour les énigmes principales d'un lieu
+        if (!($data['is_bonus'] ?? false)) {
+            $exists = Enigme::where('lieu_id', $enigme->lieu_id)
+                ->where('niveau', $data['niveau'])
+                ->where('is_bonus', false)
+                ->where('id', '!=', $enigme->id)
+                ->exists();
+
+            if ($exists) {
+                return redirect()->back()->withErrors(['niveau' => 'Une énigme principale de niveau ' . $data['niveau'] . ' existe déjà pour ce lieu.']);
+            }
+        }
 
         if ($request->hasFile('image')) {
             if ($enigme->image && !str_contains($enigme->image, 'backgrounds')) {

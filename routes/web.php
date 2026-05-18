@@ -83,6 +83,7 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
         Route::get('/lieu/{lieu}', [PlayerController::class, 'lieuDashboard'])->name('game.lieu.dashboard');
         Route::post('/enigme/{enigme}/gps', [GameplayController::class, 'validerGPS'])->name('validate.gps');
         Route::post('/enigme/{enigme}/reponse', [GameplayController::class, 'soumettreReponse'])->name('submit.answer');
+        Route::post('/enigme/{enigme}/bonus-choice', [GameplayController::class, 'faireChoixBonus'])->name('bonus.choice');
         Route::post('/enigme/{enigme}/indice/{indice}/unlock', [GameplayController::class, 'debloquerIndice'])->name('unlock.indice');
     });
 

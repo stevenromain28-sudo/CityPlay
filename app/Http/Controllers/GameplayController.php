@@ -11,6 +11,7 @@ use App\Events\EnigmeResolue;
 use App\Models\Indice;
 use App\Models\IndiceDebloque;
 use App\Models\JoueurSession;
+use App\Models\ProgressionEnigme;
 use Illuminate\Http\Request;
 
 class GameplayController extends Controller
@@ -34,16 +35,31 @@ class GameplayController extends Controller
             'longitude' => 'required|numeric',
         ]);
 
+        $user = $request->user();
+        
+        // Vérifier si la validation textuelle a été faite
+        $progression = ProgressionEnigme::where('session_jeu_id', $session->id)
+            ->where('user_id', $user->id)
+            ->where('enigme_id', $enigme->id)
+            ->first();
+
+        if (!$progression || !$progression->text_validated_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous devez d\'abord résoudre le mystère textuel !'
+            ], 422);
+        }
+
         $estValide = $this->gpsService->validerPosition(
             $request->latitude,
             $request->longitude,
             $enigme->latitude,
             $enigme->longitude,
-            $enigme->rayon ?? 50 // Rayon par défaut de 50m
+            $enigme->rayon ?? 50
         );
 
         if ($estValide) {
-            return $this->marquerEnigmeCommeResolue($session, $enigme, $request->user());
+            return $this->marquerGPSCommeValide($session, $enigme, $user, $progression);
         }
 
         return response()->json([
@@ -61,6 +77,23 @@ class GameplayController extends Controller
             'reponse' => 'required|string',
         ]);
 
+        $user = $request->user();
+
+        // Vérifier si déjà validé
+        $progression = ProgressionEnigme::firstOrCreate([
+            'session_jeu_id' => $session->id,
+            'user_id' => $user->id,
+            'enigme_id' => $enigme->id,
+        ]);
+
+        if ($progression->text_validated_at) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Déjà validé !',
+                'revealed' => true
+            ]);
+        }
+
         $motsCles = array_map('trim', explode(',', strtolower($enigme->reponse)));
         $reponseJoueur = strtolower(trim($request->reponse));
 
@@ -73,7 +106,7 @@ class GameplayController extends Controller
         }
 
         if ($valide) {
-            return $this->marquerEnigmeCommeResolue($session, $enigme, $request->user());
+            return $this->marquerTextCommeValide($session, $enigme, $user, $progression);
         }
 
         return response()->json([
@@ -82,12 +115,81 @@ class GameplayController extends Controller
         ], 422);
     }
 
-    /**
-     * Logique interne pour marquer une énigme comme résolue.
-     */
-    protected function marquerEnigmeCommeResolue(SessionJeu $session, Enigme $enigme, $user)
+    protected function marquerTextCommeValide(SessionJeu $session, Enigme $enigme, $user, $progression)
     {
-        // Enregistrer la tentative réussie
+        $progression->update(['text_validated_at' => now()]);
+
+        // Si c'est une énigme bonus, on donne direct les points bonus et on finit
+        if ($enigme->is_bonus) {
+            $scoreGagne = $this->scoreService->calculerBonus($enigme);
+            
+            $joueurSession = JoueurSession::where('session_jeu_id', $session->id)
+                ->where('user_id', $user->id)
+                ->first();
+            
+            if ($joueurSession) {
+                $joueurSession->increment('score', $scoreGagne);
+            }
+
+            // Enregistrer la tentative réussie pour le bonus
+            TentativeEnigme::create([
+                'enigme_id' => $enigme->id,
+                'user_id' => $user->id,
+                'succes' => true,
+                'tente_le' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bonus validé ! +' . $scoreGagne . ' XP',
+                'is_bonus' => true,
+                'score_gagne' => $scoreGagne
+            ]);
+        }
+
+        // Score partiel (40%) pour énigme classique
+        $scoreGagne = $this->scoreService->calculerScoreEnigme($enigme, 0, 0, 'text');
+        
+        $joueurSession = JoueurSession::where('session_jeu_id', $session->id)
+            ->where('user_id', $user->id)
+            ->first();
+        
+        if ($joueurSession) {
+            $joueurSession->increment('score', $scoreGagne);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mystère résolu ! Le lieu est révélé. Maintenant, rendez-vous sur place !',
+            'revealed' => true,
+            'score_gagne' => $scoreGagne,
+            'lieu' => [
+                'nom' => $enigme->lieu->nom,
+                'image' => $enigme->lieu->image ?? $enigme->image
+            ]
+        ]);
+    }
+
+    protected function marquerGPSCommeValide(SessionJeu $session, Enigme $enigme, $user, $progression)
+    {
+        $progression->update(['gps_validated_at' => now()]);
+
+        // Score partiel (60%)
+        $scoreGagne = $this->scoreService->calculerScoreEnigme($enigme, 0, 0, 'gps');
+
+        $joueurSession = JoueurSession::where('session_jeu_id', $session->id)
+            ->where('user_id', $user->id)
+            ->first();
+        
+        if ($joueurSession) {
+            $joueurSession->increment('score', $scoreGagne);
+            $joueurSession->increment('progression');
+        }
+
+        // On libère l'énigme courante de la session
+        $session->update(['current_enigme_id' => null]);
+
+        // Enregistrer la tentative réussie globale
         TentativeEnigme::create([
             'enigme_id' => $enigme->id,
             'user_id' => $user->id,
@@ -95,13 +197,59 @@ class GameplayController extends Controller
             'tente_le' => now(),
         ]);
 
-        // Déclencher l'événement (qui calculera le score via le Listener)
-        event(new EnigmeResolue($session, $enigme, $user));
+        return response()->json([
+            'success' => true,
+            'message' => 'Félicitations ! Vous avez gagné tous les points de ce lieu.',
+            'gps_validated' => true,
+            'score_gagne' => $scoreGagne,
+            'content' => $enigme->lieu->contenuCulturel,
+            'show_choice' => true
+        ]);
+    }
+
+    /**
+     * Gérer le choix après validation GPS.
+     */
+    public function faireChoixBonus(Request $request, SessionJeu $session, Enigme $enigme)
+    {
+        $request->validate(['wants_bonus' => 'required|boolean']);
+        $user = $request->user();
+
+        $progression = ProgressionEnigme::where('session_jeu_id', $session->id)
+            ->where('user_id', $user->id)
+            ->where('enigme_id', $enigme->id)
+            ->first();
+
+        if ($progression) {
+            $progression->update([
+                'bonus_choice_made' => true,
+                'wants_bonus' => $request->wants_bonus
+            ]);
+        }
+
+        if ($request->wants_bonus) {
+            // Récupérer les énigmes bonus pour ce lieu
+            $bonusEnigmes = Enigme::where('lieu_id', $enigme->lieu_id)
+                ->where('is_bonus', true)
+                ->orderBy('ordre')
+                ->get();
+
+            $nextBonus = $bonusEnigmes->first();
+            if ($nextBonus) {
+                $session->update(['current_enigme_id' => $nextBonus->id]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.',
+                'bonus_enigmes' => $bonusEnigmes
+            ]);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Félicitations ! Énigme résolue.',
-            'content' => $enigme->lieu->contenuCulturel // On renvoie le contenu culturel débloqué
+            'message' => 'En route pour le prochain lieu !',
+            'next_location' => true
         ]);
     }
 

@@ -22,6 +22,7 @@ class SessionJeuRequest extends FormRequest
         return [
             'ville_id' => 'required|exists:villes,id',
             'mode' => 'required|in:cooperatif,mercenaire',
+            'enigme_id' => 'nullable|exists:enigmes,id',
             'difficulte' => 'nullable|integer|min:1|max:3',
             'moyen_locomotion' => 'nullable|string',
         ];

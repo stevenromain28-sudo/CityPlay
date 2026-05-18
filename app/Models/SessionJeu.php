@@ -15,9 +15,15 @@ class SessionJeu extends Model
         'statut',
         'score',
         'progression',
+        'current_enigme_id',
         'commence_le',
         'termine_le',
     ];
+
+    public function currentEnigme()
+    {
+        return $this->belongsTo(Enigme::class, 'current_enigme_id');
+    }
 
     public function joueurs()
     {

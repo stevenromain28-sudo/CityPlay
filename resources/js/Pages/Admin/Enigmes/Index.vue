@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted ,computed} from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -14,6 +14,23 @@ import { watch } from 'vue';
 const props = defineProps({
     enigmes: Array,
     lieux: Array
+});
+
+const selectedLieuId = ref(null);
+
+const filteredEnigmes = computed(() => {
+    if (!selectedLieuId.value) return [];
+    return props.enigmes.filter(e => e.lieu_id === selectedLieuId.value);
+});
+
+const mainEnigmes = computed(() => filteredEnigmes.value.filter(e => !e.is_bonus).sort((a, b) => a.ordre - b.ordre));
+const bonusEnigmesList = computed(() => filteredEnigmes.value.filter(e => e.is_bonus).sort((a, b) => a.ordre - b.ordre));
+
+const usedLevels = computed(() => {
+    if (!selectedLieuId.value) return [];
+    return props.enigmes
+        .filter(e => e.lieu_id === selectedLieuId.value && !e.is_bonus && e.id !== form.id)
+        .map(e => e.niveau);
 });
 
 const visible = ref(false);
@@ -32,6 +49,7 @@ const form = useForm({
     longitude: null,
     rayon: 50,
     verification_gps: true,
+    is_bonus: false,
     indices: [{ contenu: '', penalite: 5 }]
 });
 
@@ -78,7 +96,7 @@ const initMap = () => {
     if (form.latitude && form.longitude) {
         marker = L.marker([form.latitude, form.longitude], { draggable: true }).addTo(map);
         updateRadius();
-        
+
         marker.on('drag', (e) => {
             const pos = e.target.getLatLng();
             form.latitude = pos.lat;
@@ -112,6 +130,7 @@ const initMap = () => {
 const openNew = () => {
     form.reset();
     form.id = null;
+    form.lieu_id = selectedLieuId.value; // Pré-remplir le lieu si déjà sélectionné
     visible.value = true;
     setTimeout(initMap, 100);
 };
@@ -128,6 +147,7 @@ const editEnigme = (enigme) => {
     form.longitude = enigme.longitude;
     form.rayon = enigme.rayon;
     form.verification_gps = !!enigme.verification_gps;
+    form.is_bonus = !!enigme.is_bonus;
     form.indices = enigme.indices.map(i => ({ contenu: i.contenu, penalite: i.penalite }));
     visible.value = true;
     setTimeout(initMap, 100);
@@ -163,7 +183,7 @@ watch(() => form.lieu_id, (newVal) => {
         if (selectedLieu && selectedLieu.latitude && selectedLieu.longitude) {
             form.latitude = selectedLieu.latitude;
             form.longitude = selectedLieu.longitude;
-            
+
             if (map) {
                 map.setView([form.latitude, form.longitude], 16);
                 if (marker) {
@@ -226,45 +246,83 @@ onMounted(() => {
                 </Button>
             </div>
 
-            <!-- Enigmes Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <div v-for="enigme in enigmes" :key="enigme.id" @click="editEnigme(enigme)" class="enigme-card group bg-white/5 backdrop-blur-xl rounded-[3rem] p-8 border-2 border-white/10 hover:border-[#1DA1F2]/50 transition-all cursor-pointer shadow-2xl relative">
-                    <!-- Sketch/Drawing Card Style -->
-                    <div class="absolute -top-4 -right-4 w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
-                        <span class="text-white font-black text-xl italic">{{ enigme.ordre }}</span>
+            <!-- Lieu Selector -->
+            <div class="flex flex-wrap gap-4 mb-12">
+                <button v-for="lieu in lieux" :key="lieu.id"
+                        @click="selectedLieuId = lieu.id"
+                        :class="[
+                            'px-6 py-3 rounded-2xl font-black uppercase tracking-widest transition-all border-2',
+                            selectedLieuId === lieu.id
+                                ? 'bg-[#1DA1F2] border-[#1DA1F2] text-white shadow-lg shadow-blue-500/50'
+                                : 'bg-white/5 border-white/10 text-white/60 hover:border-white/30'
+                        ]">
+                    {{ lieu.nom }}
+                </button>
+            </div>
+
+            <div v-if="selectedLieuId">
+                <!-- Main Enigmes Section -->
+                <div class="mb-16">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="h-[2px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
+                        <h3 class="text-3xl font-black italic uppercase text-white tracking-tighter">Énigmes Principales <span class="text-[#1DA1F2] text-xl ml-2">({{ mainEnigmes.length }}/3)</span></h3>
+                        <div class="h-[2px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
                     </div>
 
-                    <div class="aspect-video rounded-2xl overflow-hidden mb-6 border-2 border-white/5 bg-slate-900">
-                        <img v-if="enigme.image" :src="enigme.image" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700">
-                        <div v-else class="w-full h-full flex items-center justify-center text-white/10">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span class="px-3 py-1 bg-white/10 text-white/40 text-[10px] font-black uppercase rounded-lg tracking-widest">{{ enigme.lieu.nom }}</span>
-                            <span class="px-3 py-1 bg-yellow-400/20 text-yellow-400 text-[10px] font-black uppercase rounded-lg">Niveau {{ enigme.niveau }}</span>
-                        </div>
-                        <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-[#1DA1F2] transition-colors">{{ enigme.titre }}</h3>
-                        <p class="text-white/40 text-sm font-bold line-clamp-3 leading-relaxed italic">"{{ enigme.contenu }}"</p>
-                        
-                        <!-- Audio Player Small -->
-                        <div v-if="enigme.audio" class="mt-4 flex items-center bg-white/5 rounded-2xl p-3 border border-white/10">
-                            <audio :src="enigme.audio" controls class="h-8 w-full filter invert hue-rotate-180 opacity-50 hover:opacity-100 transition-opacity"></audio>
-                        </div>
-                    </div>
-
-                    <!-- Indices Parchment Preview -->
-                    <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                        <div class="flex -space-x-3">
-                            <div v-for="i in enigme.indices.length" :key="i" class="w-10 h-12 bg-[#F5DEB3] rounded-sm shadow-lg border-x border-amber-900/20 flex flex-col items-center justify-center rotate-[-10deg] even:rotate-[10deg]">
-                                <div class="w-6 h-[1px] bg-amber-900/20 my-0.5" v-for="j in 3" :key="j"></div>
+                    <div v-if="mainEnigmes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <div v-for="enigme in mainEnigmes" :key="enigme.id" @click="editEnigme(enigme)" class="enigme-card group bg-white/5 backdrop-blur-xl rounded-[3rem] p-8 border-2 border-white/10 hover:border-[#1DA1F2]/50 transition-all cursor-pointer shadow-2xl relative">
+                            <div class="absolute -top-4 -right-4 w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
+                                <span class="text-white font-black text-xl italic">{{ enigme.ordre }}</span>
+                            </div>
+                            <div class="aspect-video rounded-2xl overflow-hidden mb-6 border-2 border-white/5 bg-slate-900">
+                                <img v-if="enigme.image" :src="enigme.image" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700">
+                                <div v-else class="w-full h-full flex items-center justify-center text-white/10">
+                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-[#1DA1F2] transition-colors">{{ enigme.titre }}</h3>
+                            <p class="text-white/40 text-sm font-bold line-clamp-3 italic mt-4">"{{ enigme.contenu }}"</p>
+                            <div class="mt-6 flex items-center justify-between text-[10px] font-black uppercase text-white/20 tracking-widest">
+                                <span>NIVEAU {{ enigme.niveau }}</span>
+                                <span>{{ enigme.indices.length }} INDICES</span>
                             </div>
                         </div>
-                        <span class="text-[10px] font-black text-white/20 uppercase tracking-widest">{{ enigme.indices.length }} INDICES SCÉLLÉS</span>
+                    </div>
+                    <div v-else class="text-center py-12 bg-white/5 rounded-[3rem] border-2 border-dashed border-white/10">
+                        <p class="text-white/30 font-black uppercase tracking-widest">Aucune énigme principale définie.</p>
                     </div>
                 </div>
+
+                <!-- Bonus Enigmes Section -->
+                <div>
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="h-[2px] flex-1 bg-gradient-to-r from-transparent to-purple-500/20"></div>
+                        <h3 class="text-3xl font-black italic uppercase text-white tracking-tighter">Énigmes Bonus <span class="text-purple-400 text-xl ml-2">({{ bonusEnigmesList.length }})</span></h3>
+                        <div class="h-[2px] flex-1 bg-gradient-to-l from-transparent to-purple-500/20"></div>
+                    </div>
+
+                    <div v-if="bonusEnigmesList.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <div v-for="enigme in bonusEnigmesList" :key="enigme.id" @click="editEnigme(enigme)" class="enigme-card group bg-purple-900/10 backdrop-blur-xl rounded-[3rem] p-8 border-2 border-purple-500/10 hover:border-purple-500/50 transition-all cursor-pointer shadow-2xl relative">
+                            <div class="aspect-video rounded-2xl overflow-hidden mb-6 border-2 border-white/5 bg-slate-900">
+                                <img v-if="enigme.image" :src="enigme.image" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700">
+                                <div v-else class="w-full h-full flex items-center justify-center text-white/10">
+                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-purple-400 transition-colors">{{ enigme.titre }}</h3>
+                            <p class="text-white/40 text-sm font-bold line-clamp-3 italic mt-4">"{{ enigme.contenu }}"</p>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-12 bg-purple-900/5 rounded-[3rem] border-2 border-dashed border-purple-500/10">
+                        <p class="text-purple-500/30 font-black uppercase tracking-widest">Aucune énigme bonus.</p>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center py-32">
+                <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </div>
+                <h3 class="text-2xl font-black italic uppercase text-white/40 tracking-widest">Sélectionnez un Lieu pour voir ses secrets</h3>
             </div>
         </div>
 
@@ -275,7 +333,7 @@ onMounted(() => {
                     <span class="text-4xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">Écrire le Destin</span>
                 </div>
             </template>
-            
+
             <form @submit.prevent="submit" class="space-y-10 py-8 px-4 font-sans">
                 <!-- Message d'erreur global -->
                 <div v-if="Object.keys(form.errors).length > 0" class="bg-red-500/20 border-2 border-red-500 text-red-200 p-6 rounded-2xl mb-6 font-bold shadow-lg">
@@ -332,18 +390,31 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
                     <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse (séparés par des virgules)</label>
-                        <InputText v-model="form.reponse" placeholder="ex: secret,porte,mystere" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse</label>
+                        <InputText v-model="form.reponse" placeholder="ex: secret,porte" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
                     </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Niveau (1-3)</label>
-                        <InputText v-model="form.niveau" type="number" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                        <select v-model="form.niveau" 
+                                class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block"
+                                :class="{'opacity-50 cursor-not-allowed': form.is_bonus}">
+                            <option v-for="lvl in 3" :key="lvl" :value="lvl" :disabled="!form.is_bonus && usedLevels.includes(lvl)">
+                                Niveau {{ lvl }} {{ !form.is_bonus && usedLevels.includes(lvl) ? '(Déjà utilisé)' : '' }}
+                            </option>
+                        </select>
+                        <p v-if="!form.is_bonus && usedLevels.length >= 3" class="text-[10px] text-red-500 font-bold uppercase">Tous les niveaux principaux sont occupés</p>
                     </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Ordre</label>
                         <InputText v-model="form.ordre" type="number" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                    </div>
+                    <div class="space-y-4 flex flex-col justify-end pb-4">
+                        <div class="flex items-center space-x-3 bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                            <input type="checkbox" v-model="form.is_bonus" id="is_bonus" class="w-5 h-5 rounded text-purple-600 focus:ring-purple-500">
+                            <label for="is_bonus" class="text-sm font-black uppercase text-purple-700 cursor-pointer">Énigme Bonus</label>
+                        </div>
                     </div>
                 </div>
 
@@ -363,7 +434,7 @@ onMounted(() => {
                             <button type="button" @click.prevent="removeIndice(index)" class="absolute -top-3 -right-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 p-0 flex items-center justify-center shadow-lg transition-colors cursor-pointer border-2 border-[#F5DEB3]">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
-                            
+
                             <textarea v-model="indice.contenu" rows="2" class="w-full bg-transparent border-none p-0 font-bold text-amber-900 placeholder:text-amber-900/40 focus:ring-0 italic" placeholder="Écrivez l'indice ici..."></textarea>
                             <div class="mt-4 flex items-center justify-between border-t border-amber-900/20 pt-4">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60 tracking-widest">Pénalité Points</span>
