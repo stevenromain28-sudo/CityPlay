@@ -22,10 +22,14 @@ L.Icon.Default.mergeOptions({
 });
 
 const props = defineProps({
-    ville: Object
+    ville: Object,
+    villes: Array,
+    admins: Array,
+    isSuperAdmin: Boolean
 });
 
 const isEditing = ref(false);
+const editingVilleId = ref(null);
 
 const form = useForm({
     nom: props.ville?.nom || '',
@@ -37,21 +41,83 @@ const form = useForm({
     longitude: props.ville?.longitude || null,
     rayon_action: props.ville?.rayon_action || 50,
     banniere: null,
+    user_id: props.ville?.user_id || null,
 });
 
+const editVille = (v) => {
+    editingVilleId.value = v.id;
+    form.nom = v.nom;
+    form.description = v.description;
+    form.history = v.history;
+    form.pays = v.pays;
+    form.population = v.population;
+    form.latitude = v.latitude;
+    form.longitude = v.longitude;
+    form.rayon_action = v.rayon_action || 50;
+    form.banniere = null;
+    form.user_id = v.user_id || null;
+    
+    isEditing.value = true;
+};
+
+const createVille = () => {
+    editingVilleId.value = null;
+    form.reset();
+    form.nom = '';
+    form.description = '';
+    form.history = '';
+    form.pays = '';
+    form.population = null;
+    form.latitude = null;
+    form.longitude = null;
+    form.rayon_action = 50;
+    form.banniere = null;
+    form.user_id = null;
+    
+    isEditing.value = true;
+};
+
+const deleteVille = (id) => {
+    if (confirm("Voulez-vous vraiment détruire cette cité mythique et toutes ses légendes ?")) {
+        form.delete(route('admin.villes.destroy', id), {
+            onSuccess: () => {
+                editingVilleId.value = null;
+                isEditing.value = false;
+            }
+        });
+    }
+};
+
 const submit = () => {
-    if (props.ville) {
-        form.post(route('admin.villes.update', props.ville.id), {
-            onSuccess: () => {
-                isEditing.value = false;
-            }
-        });
+    if (props.isSuperAdmin) {
+        if (editingVilleId.value) {
+            form.post(route('admin.villes.update', editingVilleId.value), {
+                onSuccess: () => {
+                    isEditing.value = false;
+                    editingVilleId.value = null;
+                }
+            });
+        } else {
+            form.post(route('admin.villes.store'), {
+                onSuccess: () => {
+                    isEditing.value = false;
+                }
+            });
+        }
     } else {
-        form.post(route('admin.villes.store'), {
-            onSuccess: () => {
-                isEditing.value = false;
-            }
-        });
+        if (props.ville) {
+            form.post(route('admin.villes.update', props.ville.id), {
+                onSuccess: () => {
+                    isEditing.value = false;
+                }
+            });
+        } else {
+            form.post(route('admin.villes.store'), {
+                onSuccess: () => {
+                    isEditing.value = false;
+                }
+            });
+        }
     }
 };
 
@@ -167,8 +233,62 @@ onMounted(() => {
                 Retour Dashboard
             </Link>
 
-            <!-- Case 1: Ville non créée -->
-            <div v-if="!ville && !isEditing" class="bg-white rounded-3xl md:rounded-[3rem] p-8 md:p-20 text-center shadow-2xl shadow-blue-100 border-4 border-dashed border-blue-100">
+            <!-- Case SuperAdmin: Grille des Villes -->
+            <div v-if="isSuperAdmin && !isEditing" class="space-y-10">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
+                            Toutes les <span class="text-[#1DA1F2]">Cités</span>
+                        </h2>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Gestion globale des territoires</p>
+                    </div>
+                    <Button @click="createVille" class="!px-8 !py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl hover:scale-105 transition-transform flex items-center">
+                        <template #default>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
+                            <span class="text-white font-black italic uppercase tracking-widest">Nouvelle Ville</span>
+                        </template>
+                    </Button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div v-for="v in villes" :key="v.id" class="bg-white rounded-3xl overflow-hidden shadow-2xl shadow-blue-100 border border-blue-50 group transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between min-h-[350px]">
+                        <div class="relative h-48">
+                            <img :src="v.banniere || '/images/backgrounds/city.png'" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-85"></div>
+                            <div class="absolute bottom-4 left-6 right-6">
+                                <span class="px-3 py-1 bg-yellow-400 text-white text-[9px] font-black uppercase rounded-lg tracking-widest mb-1 inline-block">
+                                    {{ v.lieux_count }} Lieux
+                                </span>
+                                <h3 class="text-3xl font-black italic uppercase text-white tracking-tighter leading-none">{{ v.nom }}</h3>
+                            </div>
+                        </div>
+
+                        <div class="p-6 flex-1 flex flex-col justify-between">
+                            <div>
+                                <p class="text-slate-400 text-xs font-bold line-clamp-3 mb-4">"{{ v.description }}"</p>
+                                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#1DA1F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                    <span>Admin : <span class="text-slate-700 font-extrabold">{{ v.user ? v.user.name : 'Non assigné' }}</span></span>
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-4 pt-6 border-t border-slate-50 mt-6">
+                                <Button @click="editVille(v)" class="flex-1 !py-3 !bg-blue-50 hover:!bg-blue-100 !text-[#1DA1F2] !border-none !rounded-xl !shadow-none transition-colors">
+                                    <span class="font-black italic uppercase text-xs">Modifier</span>
+                                </Button>
+                                <Button @click="deleteVille(v.id)" class="!px-4 !py-3 !bg-red-50 hover:!bg-red-100 !text-red-500 !border-none !rounded-xl !shadow-none transition-colors">
+                                    <template #default>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </template>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case 1: Ville non créée (Pour Admin standard) -->
+            <div v-if="!isSuperAdmin && !ville && !isEditing" class="bg-white rounded-3xl md:rounded-[3rem] p-8 md:p-20 text-center shadow-2xl shadow-blue-100 border-4 border-dashed border-blue-100">
                 <div class="w-16 h-16 md:w-24 md:h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 md:mb-8">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-12 md:w-12 text-[#1DA1F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                 </div>
@@ -179,8 +299,8 @@ onMounted(() => {
                 </Button>
             </div>
 
-            <!-- Case 2: Affichage de la Ville (Vue Prestige) -->
-            <div v-if="ville && !isEditing" class="bg-white rounded-3xl md:rounded-[4rem] shadow-2xl shadow-blue-100 overflow-hidden border-2 border-white">
+            <!-- Case 2: Affichage de la Ville (Vue Prestige - Pour Admin Standard) -->
+            <div v-if="!isSuperAdmin && ville && !isEditing" class="bg-white rounded-3xl md:rounded-[4rem] shadow-2xl shadow-blue-100 overflow-hidden border-2 border-white">
                 <div class="relative h-[400px] md:h-[500px]">
                     <img :src="ville.banniere" class="w-full h-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
@@ -240,10 +360,18 @@ onMounted(() => {
             <div v-if="isEditing" class="bg-white rounded-3xl md:rounded-[3rem] shadow-2xl overflow-hidden border-2 border-white mt-8">
                 <div class="h-24 md:h-32 bg-[#1DA1F2] flex items-center px-6 md:px-12 justify-between">
                     <h2 class="text-2xl md:text-4xl font-black italic uppercase text-white tracking-tighter">Configuration de la <span class="text-yellow-400">Cité</span></h2>
-                    <Button icon="pi pi-times" @click="isEditing = false" class="!bg-white/10 !text-white !border-none !rounded-full" />
+                    <Button icon="pi pi-times" @click="isEditing = false; editingVilleId = null" class="!bg-white/10 !text-white !border-none !rounded-full" />
                 </div>
 
                 <form @submit.prevent="submit" class="p-6 md:p-12 lg:p-16 space-y-8 md:space-y-10 font-sans">
+                    <!-- Admin Assignment (Only SuperAdmin) -->
+                    <div v-if="isSuperAdmin" class="space-y-4">
+                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Assigner à un Administrateur</label>
+                        <select v-model="form.user_id" class="w-full rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] outline-none">
+                            <option :value="null">Laisser libre (Non assigné)</option>
+                            <option v-for="admin in admins" :key="admin.id" :value="admin.id">{{ admin.name }} ({{ admin.email }})</option>
+                        </select>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                         <div class="space-y-4">
                             <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Nom de la ville</label>
@@ -310,7 +438,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 h1, h2, h3, h4, span, button { font-family: 'Bangers', cursive; }
 .font-sans { font-family: 'Outfit', sans-serif !important; }
 </style>

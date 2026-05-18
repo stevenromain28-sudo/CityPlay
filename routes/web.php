@@ -25,17 +25,25 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    $user = auth()->user();
+    if ($user->hasRole('admin') || $user->hasRole('super_admin')) {
+        return redirect()->route('admin.dashboard');
+    }
+    if ($user->hasRole('player')) {
+        return redirect()->route('player.dashboard');
+    }
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Admin Routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin|super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     // CRUD Villes
     Route::get('/villes', [VilleController::class, 'index'])->name('villes.index');
     Route::post('/villes', [VilleController::class, 'store'])->name('villes.store');
     Route::post('/villes/{ville}', [VilleController::class, 'update'])->name('villes.update');
+    Route::delete('/villes/{ville}', [VilleController::class, 'destroy'])->name('villes.destroy');
 
     // CRUD Lieux
     Route::get('/lieux', [LieuController::class, 'index'])->name('lieux.index');
@@ -54,6 +62,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/contenus-culturels', [ContenuCulturelController::class, 'store'])->name('contenus-culturels.store');
     Route::post('/contenus-culturels/{contenuCulturel}', [ContenuCulturelController::class, 'update'])->name('contenus-culturels.update');
     Route::delete('/contenus-culturels/{contenuCulturel}', [ContenuCulturelController::class, 'destroy'])->name('contenus-culturels.destroy');
+
+    // CRUD Utilisateurs Admins (Seulement pour le SuperAdmin)
+    Route::middleware(['role:super_admin'])->group(function () {
+        Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+        Route::post('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+    });
 });
 
 // Fallback debug

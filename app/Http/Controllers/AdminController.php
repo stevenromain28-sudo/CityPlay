@@ -15,7 +15,22 @@ class AdminController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
+        $isSuperAdmin = $user->hasRole('super_admin');
         
+        if ($isSuperAdmin) {
+            return Inertia::render('Admin/Dashboard', [
+                'stats' => [
+                    'villes_count' => Ville::count(),
+                    'lieux_count' => Lieu::count(),
+                    'enigmes_count' => Enigme::count(),
+                    'users_count' => User::count(),
+                    'sessions_count' => SessionJeu::count(),
+                ],
+                'ma_ville' => null,
+                'recent_lieux' => Lieu::latest()->take(4)->get(),
+            ]);
+        }
+
         // On récupère la ville associée à cet admin (une ville par admin)
         $maVille = Ville::withCount('lieux')
             ->where('user_id', $user->id)

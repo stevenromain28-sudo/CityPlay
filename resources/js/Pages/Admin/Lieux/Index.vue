@@ -11,7 +11,9 @@ import L from 'leaflet';
 
 const props = defineProps({
     lieux: Array,
-    ville: Object
+    ville: Object,
+    villes: Array,
+    isSuperAdmin: Boolean
 });
 
 const visible = ref(false);
@@ -30,6 +32,7 @@ const form = useForm({
     difficulte: 1,
     duree_estimee: 30,
     image_principale: null,
+    ville_id: props.ville?.id || null,
 });
 
 const searchQuery = ref('');
@@ -37,6 +40,7 @@ const searchQuery = ref('');
 const openNew = () => {
     form.reset();
     form.id = null;
+    form.ville_id = props.ville?.id || null;
     if (tempMarker) {
         form.latitude = tempMarker.getLatLng().lat;
         form.longitude = tempMarker.getLatLng().lng;
@@ -57,6 +61,7 @@ const editLieu = (lieu) => {
     form.rayon = lieu.rayon;
     form.difficulte = lieu.difficulte;
     form.duree_estimee = lieu.duree_estimee;
+    form.ville_id = lieu.ville_id;
     visible.value = true;
     if (map && lieu.latitude && lieu.longitude) {
         map.setView([lieu.latitude, lieu.longitude], 15);
@@ -252,6 +257,14 @@ onMounted(() => {
             </template>
             
             <form @submit.prevent="submit" class="space-y-6 py-4 font-sans px-2">
+                <!-- Ville Selection (Only SuperAdmin) -->
+                <div v-if="isSuperAdmin" class="space-y-3">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Ville Associée</label>
+                    <select v-model="form.ville_id" class="w-full rounded-xl bg-blue-50/50 border-none p-4 font-bold focus:ring-2 focus:ring-[#1DA1F2] outline-none">
+                        <option :value="null">Sélectionner une ville...</option>
+                        <option v-for="v in villes" :key="v.id" :value="v.id">{{ v.nom }}</option>
+                    </select>
+                </div>
                 
                 <div class="space-y-3">
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Recherche géographique</label>
