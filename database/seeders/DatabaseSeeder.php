@@ -15,9 +15,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
-            CityPlaySeeder::class,
-            CotonouSeeder::class,
-            AmazoneEnigmesSeeder::class,
         ]);
 
         $admin = User::factory()->create([
@@ -34,9 +31,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $player->assignRole('player');
 
-        // Maintenant on peut appeler CityPlaySeeder car l'admin existe
-        $this->call([
-            CityPlaySeeder::class,
-        ]);
+
     }
 }

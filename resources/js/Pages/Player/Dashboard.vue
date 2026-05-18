@@ -72,9 +72,15 @@ const obtenirLocalisation = () => {
 };
 
 const lancerJeu = () => {
-    // Redirige vers la logique backend pour trouver la bonne énigme/session
+    // Récupérer les coordonnées actuelles depuis l'URL pour les transmettre au backend
+    const urlParams = new URLSearchParams(window.location.search);
+    const lat = urlParams.get('lat');
+    const lng = urlParams.get('lng');
+
     router.post(route('player.game.auto-start'), {
-        ville_id: props.ville_detectee?.id
+        ville_id: props.ville_detectee?.id,
+        lat: lat,
+        lng: lng
     });
 };
 </script>

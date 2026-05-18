@@ -19,6 +19,7 @@ class Enigme extends Model
         'longitude',
         'rayon',
         'verification_gps',
+        'is_bonus',
     ];
 
     public function lieu()
