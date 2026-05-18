@@ -28,7 +28,7 @@ Route::get('/dashboard', function () {
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-    
+
     // CRUD Villes
     Route::get('/villes', [VilleController::class, 'index'])->name('villes.index');
     Route::post('/villes', [VilleController::class, 'store'])->name('villes.store');
