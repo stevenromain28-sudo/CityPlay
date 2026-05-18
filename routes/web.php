@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\SessionJeuController;
+use App\Http\Controllers\GameplayController;
 use App\Http\Controllers\Admin\VilleController;
 use App\Http\Controllers\Admin\LieuController;
 use App\Http\Controllers\Admin\EnigmeController;
@@ -59,15 +62,38 @@ Route::get('/debug-routes', function() {
 });
 
 // Player Routes
-Route::middleware(['auth', 'role:player'])->name('player.')->group(function () {
-    Route::get('/play', function () {
-        return Inertia::render('Player/Dashboard', [
-            'villes' => Ville::where('actif', true)->get()
-        ]);
-    })->name('dashboard');
-
+Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->group(function () {
+    Route::get('/dashboard', [PlayerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/ville/{ville}/lieu/{lieu}', [PlayerController::class, 'lieuDashboard'])->name('lieu.dashboard');
+    Route::post('/detect-city', [PlayerController::class, 'detecterVille'])->name('detect-city');
+    
     Route::post('/enigmes/{enigme}/validate-location', [GameController::class, 'validateLocation'])->name('enigmes.validate-location');
+    
+    // Auto-start game from dashboard
+    Route::post('/game/auto-start', [PlayerController::class, 'autoStart'])->name('game.auto-start');
+
+    // Sessions de jeu
+    Route::resource('sessions', SessionJeuController::class);
+    Route::post('/sessions/{session}/start', [SessionJeuController::class, 'start'])->name('sessions.start');
+    Route::post('/sessions/{session}/status', [SessionJeuController::class, 'updateStatus'])->name('sessions.status');
+
+    // Gameplay
+    Route::prefix('game/{session}')->name('game.')->group(function () {
+        Route::get('/', [PlayerController::class, 'jeu'])->name('jeu');
+        Route::get('/lieu/{lieu}', [PlayerController::class, 'lieuDashboard'])->name('game.lieu.dashboard');
+        Route::post('/enigme/{enigme}/gps', [GameplayController::class, 'validerGPS'])->name('validate.gps');
+        Route::post('/enigme/{enigme}/reponse', [GameplayController::class, 'soumettreReponse'])->name('submit.answer');
+        Route::post('/enigme/{enigme}/indice/{indice}/unlock', [GameplayController::class, 'debloquerIndice'])->name('unlock.indice');
+    });
+
+    // Placeholder routes for other pages
+    Route::get('/map', [PlayerController::class, 'map'])->name('map');
+    Route::get('/enigme', [PlayerController::class, 'enigmes'])->name('enigme');
+    Route::get('/leaderboard', [PlayerController::class, 'leaderboard'])->name('leaderboard');
+    Route::get('/invitation', function () { return Inertia::render('Player/Invitation'); })->name('invitation');
+    Route::get('/websocket', [PlayerController::class, 'websocket'])->name('websocket');
 });
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

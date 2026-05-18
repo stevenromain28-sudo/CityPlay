@@ -9,6 +9,7 @@ import Select from 'primevue/select';
 import gsap from 'gsap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { watch } from 'vue';
 
 const props = defineProps({
     enigmes: Array,
@@ -133,6 +134,9 @@ const editEnigme = (enigme) => {
 };
 
 const submit = () => {
+    // Nettoyer les indices vides pour éviter les erreurs de validation
+    form.indices = form.indices.filter(i => i.contenu && i.contenu.trim() !== '');
+
     if (form.id) {
         form.post(route('admin.enigmes.update', form.id), {
             onSuccess: () => visible.value = false
@@ -143,6 +147,35 @@ const submit = () => {
         });
     }
 };
+
+const deleteEnigme = () => {
+    if (confirm("Voulez-vous vraiment détruire cette énigme des annales ?")) {
+        form.delete(route('admin.enigmes.destroy', form.id), {
+            onSuccess: () => visible.value = false
+        });
+    }
+};
+
+// Autocenter and auto-fill coordinates when a lieu is selected
+watch(() => form.lieu_id, (newVal) => {
+    if (newVal && !form.id) { // Seulement lors de la création pour ne pas écraser une position personnalisée d'énigme existante
+        const selectedLieu = props.lieux.find(l => l.id === newVal);
+        if (selectedLieu && selectedLieu.latitude && selectedLieu.longitude) {
+            form.latitude = selectedLieu.latitude;
+            form.longitude = selectedLieu.longitude;
+            
+            if (map) {
+                map.setView([form.latitude, form.longitude], 16);
+                if (marker) {
+                    marker.setLatLng([form.latitude, form.longitude]);
+                }
+                if (radiusCircle) {
+                    radiusCircle.setLatLng([form.latitude, form.longitude]);
+                }
+            }
+        }
+    }
+});
 
 const onFileSelect = (event) => {
     form.image = event.files[0];
@@ -243,7 +276,15 @@ onMounted(() => {
                 </div>
             </template>
             
-            <form @submit.prevent="submit" class="space-y-10 py-8 custom-scrollbar max-h-[70vh] overflow-y-auto px-4 font-sans">
+            <form @submit.prevent="submit" class="space-y-10 py-8 px-4 font-sans">
+                <!-- Message d'erreur global -->
+                <div v-if="Object.keys(form.errors).length > 0" class="bg-red-500/20 border-2 border-red-500 text-red-200 p-6 rounded-2xl mb-6 font-bold shadow-lg">
+                    <p class="text-xl font-black italic uppercase text-red-400 mb-2">Erreur de validation</p>
+                    <ul class="list-disc pl-5">
+                        <li v-for="(error, field) in form.errors" :key="field">{{ error }}</li>
+                    </ul>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Lieu associé</label>
@@ -293,8 +334,8 @@ onMounted(() => {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                     <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Réponse attendue</label>
-                        <InputText v-model="form.reponse" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse (séparés par des virgules)</label>
+                        <InputText v-model="form.reponse" placeholder="ex: secret,porte,mystere" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
                     </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Niveau (1-3)</label>
@@ -310,13 +351,18 @@ onMounted(() => {
                 <div class="space-y-8">
                     <div class="flex items-center justify-between">
                         <h4 class="text-2xl font-black italic uppercase text-yellow-400 tracking-tighter">Les Indices du Parchemin ({{ form.indices.length }}/5)</h4>
-                        <Button v-if="form.indices.length < 5" type="button" icon="pi pi-plus" @click="addIndice" class="!bg-yellow-400/10 !text-yellow-400 !border-none !rounded-xl !p-3 hover:!bg-yellow-400/20 transition-all" />
+                        <Button v-if="form.indices.length < 5" type="button" @click="addIndice" class="!bg-yellow-400/10 !text-yellow-400 !border-none !rounded-xl !px-4 !py-3 hover:!bg-yellow-400/20 transition-all !flex !items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            <span class="text-xs font-black uppercase tracking-widest">Ajouter Indice</span>
+                        </Button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div v-for="(indice, index) in form.indices" :key="index" class="relative p-8 bg-[#F5DEB3] rounded-sm shadow-2xl border-x-4 border-amber-900/10 rotate-[-1deg] hover:rotate-0 transition-transform">
                             <div class="absolute -top-3 -left-3 w-8 h-8 bg-amber-900 text-white rounded-full flex items-center justify-center text-[10px] font-black">#{{ index + 1 }}</div>
-                            <Button type="button" icon="pi pi-times" @click="removeIndice(index)" class="absolute -top-3 -right-3 !bg-red-500 !text-white !border-none !rounded-full !w-8 !h-8 !p-0" />
+                            <button type="button" @click.prevent="removeIndice(index)" class="absolute -top-3 -right-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 p-0 flex items-center justify-center shadow-lg transition-colors cursor-pointer border-2 border-[#F5DEB3]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                             
                             <textarea v-model="indice.contenu" rows="2" class="w-full bg-transparent border-none p-0 font-bold text-amber-900 placeholder:text-amber-900/40 focus:ring-0 italic" placeholder="Écrivez l'indice ici..."></textarea>
                             <div class="mt-4 flex items-center justify-between border-t border-amber-900/20 pt-4">
@@ -338,9 +384,12 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="pt-10">
-                    <Button type="submit" :loading="form.processing" class="w-full !py-6 !bg-yellow-400 !border-none !rounded-[2rem] !shadow-2xl !shadow-yellow-900/20 hover:!scale-[1.02] transition-transform">
+                <div class="pt-10 flex flex-col md:flex-row gap-4">
+                    <Button type="submit" :loading="form.processing" class="flex-1 !py-6 !bg-yellow-400 !border-none !rounded-[2rem] !shadow-2xl !shadow-yellow-900/20 hover:!scale-[1.02] transition-transform">
                          <span class="text-2xl font-black italic uppercase text-white tracking-widest">Sceller l'Énigme</span>
+                    </Button>
+                    <Button v-if="form.id" @click.prevent="deleteEnigme" class="md:w-auto !px-8 !py-6 !bg-red-500 hover:!bg-red-600 !border-none !rounded-[2rem] !shadow-2xl transition-colors">
+                         <span class="text-2xl font-black italic uppercase text-white tracking-widest">Détruire</span>
                     </Button>
                 </div>
             </form>

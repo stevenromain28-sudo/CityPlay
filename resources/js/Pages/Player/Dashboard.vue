@@ -1,114 +1,164 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { onMounted, ref } from 'vue';
 import gsap from 'gsap';
+import PlayerLayout from '@/Layouts/PlayerLayout.vue';
 
 const props = defineProps({
-    villes: Array
+    stats: Object,
+    recent_sessions: Array,
+    villes_disponibles: Array,
+    ville_detectee: Object,
+    localisation_requise: Boolean
 });
 
+const detectant = ref(false);
+const messageErreur = ref(null);
+
 onMounted(() => {
-    gsap.from('.adventure-card', {
-        scale: 0.9,
-        opacity: 0,
-        stagger: 0.2,
-        duration: 0.8,
-        ease: 'back.out(1.7)'
-    });
+    if (props.localisation_requise) {
+        obtenirLocalisation();
+    } else {
+        animerMenu();
+    }
 });
+
+const animerMenu = () => {
+    const tl = gsap.timeline({ defaults: { ease: 'back.out(1.7)' } });
+    
+    tl.from('.game-title', { scale: 0, opacity: 0, duration: 0.8, rotation: -10 })
+      .from('.menu-btn', { 
+          y: 50, 
+          opacity: 0, 
+          stagger: 0.15, 
+          duration: 0.6 
+      }, '-=0.4');
+};
+
+const obtenirLocalisation = () => {
+    detectant.value = true;
+    messageErreur.value = null;
+    
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            router.get(route('player.dashboard'), {
+                lat: lat,
+                lng: lng
+            }, {
+                preserveState: true,
+                onSuccess: () => {
+                    animerMenu();
+                },
+                onError: () => {
+                    messageErreur.value = "Erreur lors du chargement des données.";
+                },
+                onFinish: () => detectant.value = false
+            });
+        }, (error) => {
+            messageErreur.value = "Veuillez activer la géolocalisation pour jouer.";
+            detectant.value = false;
+        }, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        });
+    } else {
+        messageErreur.value = "Votre navigateur ne supporte pas la géolocalisation.";
+        detectant.value = false;
+    }
+};
+
+const lancerJeu = () => {
+    // Redirige vers la logique backend pour trouver la bonne énigme/session
+    router.post(route('player.game.auto-start'), {
+        ville_id: props.ville_detectee?.id
+    });
+};
 </script>
 
 <template>
-    <Head title="Joueur Dashboard" />
-
-    <div class="min-h-screen bg-[#0f1123] text-white font-sans">
-        <AuthenticatedLayout>
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-black tracking-tight text-white uppercase">
-                        Prêt pour l'aventure ?
-                    </h2>
-                    <div class="flex space-x-2">
-                        <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-bold border border-purple-500/30">
-                            1250 Points
-                        </span>
+    <PlayerLayout title="Menu Principal">
+        <div class="h-full flex flex-col items-center justify-center p-4 relative z-10">
+            
+            <!-- Affichage Pendant la détection GPS -->
+            <div v-if="!ville_detectee && detectant" class="text-center">
+                <div class="w-32 h-32 mx-auto mb-8 relative">
+                    <div class="absolute inset-0 border-8 border-[#7C3AED]/30 rounded-full"></div>
+                    <div class="absolute inset-0 border-8 border-yellow-400 rounded-full border-t-transparent animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-[#7C3AED]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
                 </div>
-            </template>
+                <h2 class="text-3xl md:text-5xl font-black italic uppercase text-white drop-shadow-xl tracking-tighter">Scan de la zone...</h2>
+                <p class="text-white/80 font-bold uppercase tracking-widest mt-4">Recherche d'énigmes à proximité</p>
+            </div>
 
-            <div class="py-8 md:py-12 px-4 md:px-6 lg:px-8">
-                <div class="max-w-7xl mx-auto">
-                    <div class="mb-10">
-                        <h3 class="text-gray-400 text-sm font-bold uppercase tracking-widest mb-4">Destinations Populaires</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <div v-for="ville in villes" :key="ville.id"
-                                 class="adventure-card group relative overflow-hidden rounded-[2rem] aspect-[4/5] cursor-pointer shadow-2xl">
-                                <img :src="'https://source.unsplash.com/featured/?city,' + ville.nom"
-                                     class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
-                                <div class="absolute inset-0 bg-gradient-to-t from-[#0f1123] via-[#0f1123]/20 to-transparent"></div>
+            <!-- Affichage Erreur GPS -->
+            <div v-else-if="!ville_detectee && !detectant" class="text-center bg-black/50 backdrop-blur-md p-10 rounded-3xl border-2 border-red-500/50 max-w-lg">
+                <h2 class="text-4xl font-black italic uppercase text-red-400 drop-shadow-xl mb-4">Hors Zone</h2>
+                <p class="text-white font-bold uppercase tracking-widest mb-8">{{ messageErreur || "Aucune ville à proximité" }}</p>
+                <button @click="obtenirLocalisation" class="px-8 py-4 bg-yellow-400 text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all text-xl">
+                    Réessayer
+                </button>
+            </div>
 
-                                <div class="absolute bottom-8 left-8 right-8">
-                                    <h4 class="text-3xl font-black mb-2">{{ ville.nom }}</h4>
-                                    <p class="text-gray-300 text-sm line-clamp-2 mb-6">{{ ville.description }}</p>
-
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex -space-x-2">
-                                            <div v-for="i in 3" :key="i" class="w-8 h-8 rounded-full border-2 border-[#0f1123] bg-gray-800 flex items-center justify-center text-[10px] font-bold">
-                                                {{ ['A', 'B', 'C'][i-1] }}
-                                            </div>
-                                            <div class="w-8 h-8 rounded-full border-2 border-[#0f1123] bg-purple-600 flex items-center justify-center text-[10px] font-bold">
-                                                +12
-                                            </div>
-                                        </div>
-                                        <button class="px-6 py-3 bg-white text-[#0f1123] rounded-2xl font-black text-sm transition-transform hover:scale-105 active:scale-95">
-                                            EXPLORER
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="absolute top-8 left-8">
-                                    <span class="px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl text-xs font-bold border border-white/10">
-                                        {{ ville.pays }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Placeholder for more adventures -->
-                            <div class="adventure-card border-4 border-dashed border-white/5 rounded-[2rem] flex flex-col items-center justify-center text-white/20 hover:text-white/40 hover:border-white/10 transition-all cursor-pointer">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span class="font-black tracking-widest uppercase">Bientôt disponible</span>
-                            </div>
-                        </div>
+            <!-- MENU PRINCIPAL DU JEU -->
+            <div v-else-if="ville_detectee" class="w-full max-w-md flex flex-col items-center justify-center gap-8">
+                
+                <!-- Titre du jeu animé -->
+                <div class="game-title text-center mb-6">
+                    <h1 class="text-7xl md:text-8xl font-black italic uppercase tracking-tighter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+                        <span class="text-white">CITY</span><span class="text-yellow-400">PLAY</span>
+                    </h1>
+                    <div class="inline-block px-4 py-1 bg-white/20 backdrop-blur-md rounded-full mt-2 border border-white/30">
+                        <p class="text-white font-bold text-sm tracking-[0.3em] uppercase">Zone : {{ ville_detectee.nom }}</p>
                     </div>
+                </div>
+
+                <!-- Boutons du menu -->
+                <div class="flex flex-col w-full gap-5">
+                    
+                    <!-- Bouton JOUER (Principal) -->
+                    <button @click="lancerJeu" class="menu-btn group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-[1.9rem] bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-6 flex items-center justify-center border-t border-yellow-200">
+                            <span class="text-4xl md:text-5xl font-black italic uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] tracking-widest group-hover:text-yellow-50 transition-colors">Jouer</span>
+                            <div class="absolute inset-0 rounded-[1.9rem] bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                        </div>
+                    </button>
+
+                    <!-- Bouton CARTE -->
+                    <Link :href="route('player.map')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                            <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Carte</span>
+                        </div>
+                    </Link>
+
+                    <!-- Bouton STATISTIQUES -->
+                    <Link :href="route('player.leaderboard')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                            <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Statistiques</span>
+                        </div>
+                    </Link>
+
+                    <!-- Bouton INVITATION -->
+                    <Link :href="route('player.invitation')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-200 to-slate-400 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform mt-2 opacity-90">
+                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-white to-slate-200 px-6 py-4 flex items-center justify-center border-t border-white">
+                            <span class="text-2xl md:text-3xl font-black italic uppercase text-[#7C3AED] drop-shadow-sm tracking-widest">Inviter des amis</span>
+                        </div>
+                    </Link>
+
                 </div>
             </div>
-        </AuthenticatedLayout>
-    </div>
+
+        </div>
+    </PlayerLayout>
 </template>
 
 <style scoped>
-:deep(nav) {
-    background-color: #161931 !important;
-    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-}
-:deep(header) {
-    background-color: transparent !important;
-    box-shadow: none !important;
-}
-:deep(.responsive-menu-container) {
-    background-color: #0f1123 !important;
-    border-top: 1px solid rgba(255,255,255,0.05) !important;
-}
-:deep(.responsive-menu-container *) {
-    color: white !important;
-    border-color: rgba(255,255,255,0.1) !important;
-    background-color: transparent !important;
-}
-:deep(.hamburger-btn) {
-    color: white !important;
-}
-:deep(.hamburger-btn:hover), :deep(.hamburger-btn:focus) {
-    background-color: rgba(255,255,255,0.1) !important;
-}
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
+.font-sans { font-family: 'Outfit', sans-serif; }
+h1, h2, h3, button, span { font-family: 'Bangers', cursive; }
 </style>

@@ -18,7 +18,7 @@ class Lieu extends Model
         'rayon',
         'image_principale',
         'difficulte',
-        'duree_estimee'
+        'duree_estimee',
     ];
 
     public function ville()

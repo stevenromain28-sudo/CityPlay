@@ -1,12 +1,25 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import FileUpload from 'primevue/fileupload';
 import Dialog from 'primevue/dialog';
 import gsap from 'gsap';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet marker icons with Vite
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: iconRetinaUrl,
+    iconUrl: iconUrl,
+    shadowUrl: shadowUrl
+});
 
 const props = defineProps({
     ville: Object
@@ -22,6 +35,7 @@ const form = useForm({
     population: props.ville?.population || null,
     latitude: props.ville?.latitude || null,
     longitude: props.ville?.longitude || null,
+    rayon_action: props.ville?.rayon_action || 50,
     banniere: null,
 });
 
@@ -44,6 +58,93 @@ const submit = () => {
 const onFileSelect = (event) => {
     form.banniere = event.files[0];
 };
+
+const mapContainer = ref(null);
+let map = null;
+let marker = null;
+let circle = null;
+const searchQuery = ref('');
+
+const initMap = () => {
+    if (!mapContainer.value) return;
+    
+    const lat = form.latitude || 48.8566;
+    const lng = form.longitude || 2.3522;
+    
+    map = L.map(mapContainer.value).setView([lat, lng], 12);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    circle = L.circle([lat, lng], {
+        color: '#1DA1F2',
+        fillColor: '#1DA1F2',
+        fillOpacity: 0.2,
+        radius: (form.rayon_action || 50) * 1000
+    }).addTo(map);
+
+    const updateCoords = (e) => {
+        const { lat, lng } = e.latlng || e.target.getLatLng();
+        form.latitude = lat;
+        form.longitude = lng;
+        circle.setLatLng([lat, lng]);
+    };
+
+    marker.on('dragend', updateCoords);
+    
+    map.on('click', (e) => {
+        marker.setLatLng(e.latlng);
+        updateCoords(e);
+    });
+};
+
+const updateMapRadius = () => {
+    if (circle) {
+        circle.setRadius((form.rayon_action || 50) * 1000);
+    }
+};
+
+const searchLocation = async () => {
+    if (!searchQuery.value) return;
+    
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lng = parseFloat(data[0].lon);
+            
+            map.setView([lat, lng], 12);
+            marker.setLatLng([lat, lng]);
+            circle.setLatLng([lat, lng]);
+            
+            form.latitude = lat;
+            form.longitude = lng;
+            
+            if (!form.nom) form.nom = data[0].name || '';
+        } else {
+            alert("Lieu non trouvé");
+        }
+    } catch (e) {
+        console.error("Erreur de recherche", e);
+    }
+};
+
+watch(isEditing, (newVal) => {
+    if (newVal) {
+        nextTick(() => {
+            if (!map) initMap();
+        });
+    } else {
+        if (map) {
+            map.remove();
+            map = null;
+        }
+    }
+});
 
 onMounted(() => {
     gsap.from('.ville-container', {
@@ -154,19 +255,32 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                         <div class="space-y-4">
                             <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Population</label>
                             <InputText v-model="form.population" type="number" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
                         </div>
                         <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Latitude (Base)</label>
-                            <InputText v-model="form.latitude" placeholder="45.8992" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Rayon d'action (km)</label>
+                            <InputText v-model="form.rayon_action" @input="updateMapRadius" type="number" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
                         </div>
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Longitude (Base)</label>
-                            <InputText v-model="form.longitude" placeholder="6.1264" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                    </div>
+
+                    <!-- Map Section -->
+                    <div class="space-y-4">
+                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Localisation de la ville</label>
+                        <div class="flex flex-col md:flex-row gap-4 mb-4">
+                            <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une ville ou une adresse..." class="flex-1 !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                            <Button @click.prevent="searchLocation" class="!px-8 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg">
+                                <span class="text-white font-black uppercase tracking-widest text-sm">Chercher</span>
+                            </Button>
                         </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-500 px-2 mb-2">
+                            <div>Lat : <span class="text-[#1DA1F2]">{{ form.latitude || 'N/A' }}</span></div>
+                            <div>Lng : <span class="text-[#1DA1F2]">{{ form.longitude || 'N/A' }}</span></div>
+                        </div>
+                        <div class="w-full h-[300px] md:h-[400px] rounded-3xl overflow-hidden border-4 border-blue-50 shadow-inner z-10" ref="mapContainer"></div>
+                        <p class="text-xs font-bold text-slate-400 text-center mt-2">Vous pouvez déplacer le marqueur pour ajuster le centre de votre ville.</p>
                     </div>
 
                     <div class="space-y-4">
