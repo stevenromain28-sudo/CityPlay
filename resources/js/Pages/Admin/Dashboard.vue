@@ -69,11 +69,22 @@ const leaveCard = (el) => {
     });
 };
 
+const notifyModal = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+
+const triggerNotify = (type, title, message) => {
+    notifyModal.value = { show: true, type, title, message };
+};
+
 const invitationLink = ref('');
 const generateLink = () => {
     if (invitationLink.value) {
         navigator.clipboard.writeText(invitationLink.value);
-        alert('Lien copié !');
+        triggerNotify('success', 'Lien Copié', 'Le lien d\'invitation a été copié dans votre presse-papier !');
         return;
     }
     const token = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -82,7 +93,7 @@ const generateLink = () => {
     // Copy automatically on first generation
     setTimeout(() => {
         navigator.clipboard.writeText(invitationLink.value);
-        alert('Lien généré et copié dans le presse-papier !');
+        triggerNotify('success', 'Lien Généré', 'Le lien d\'invitation épique a été généré et copié dans le presse-papier !');
     }, 100);
 };
 </script>
@@ -296,12 +307,33 @@ const generateLink = () => {
                 </section>
             </div>
         </main>
+
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                        D'accord
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
-
 .font-sans {
     font-family: 'Outfit', sans-serif;
 }

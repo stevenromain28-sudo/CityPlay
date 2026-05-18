@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -9,10 +9,58 @@ import gsap from 'gsap';
 
 const props = defineProps({
     contenus: Array,
-    lieux: Array
+    lieux: Array,
+    villes: Array,
+    isSuperAdmin: Boolean
 });
 
 const visible = ref(false);
+const selectedVilleFilter = ref(null);
+const selectedFormVille = ref(null);
+
+const filteredContenus = computed(() => {
+    if (!props.isSuperAdmin || !selectedVilleFilter.value) {
+        return props.contenus;
+    }
+    return props.contenus.filter(c => c.lieu && c.lieu.ville_id === selectedVilleFilter.value);
+});
+
+const filteredLieuxForForm = computed(() => {
+    if (!props.isSuperAdmin || !selectedFormVille.value) {
+        return props.lieux;
+    }
+    return props.lieux.filter(l => l.ville_id === selectedFormVille.value);
+});
+
+const confirmModal = ref({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null
+});
+
+const notifyModal = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+
+const triggerConfirm = (title, message, callback) => {
+    confirmModal.value = {
+        show: true,
+        title,
+        message,
+        onConfirm: () => {
+            confirmModal.value.show = false;
+            callback();
+        }
+    };
+};
+
+const triggerNotify = (type, title, message) => {
+    notifyModal.value = { show: true, type, title, message };
+};
 
 const form = useForm({
     id: null,
@@ -25,6 +73,7 @@ const form = useForm({
 const openNew = () => {
     form.reset();
     form.id = null;
+    selectedFormVille.value = null;
     visible.value = true;
 };
 
@@ -34,6 +83,9 @@ const editContenu = (contenu) => {
     form.titre = contenu.titre;
     form.description = contenu.description;
     form.audio = null;
+    if (props.isSuperAdmin && contenu.lieu) {
+        selectedFormVille.value = contenu.lieu.ville_id;
+    }
     visible.value = true;
 };
 
@@ -50,11 +102,18 @@ const submit = () => {
 };
 
 const deleteContenu = () => {
-    if (confirm('Voulez-vous vraiment effacer ce savoir ?')) {
-        form.delete(route('admin.contenus-culturels.destroy', form.id), {
-            onSuccess: () => visible.value = false
-        });
-    }
+    triggerConfirm(
+        "Effacer ce savoir ?",
+        "Voulez-vous vraiment effacer ce savoir des archives culturelles de la cité ? Cette action est irréversible.",
+        () => {
+            form.delete(route('admin.contenus-culturels.destroy', form.id), {
+                onSuccess: () => {
+                    visible.value = false;
+                    triggerNotify('success', 'Savoir effacé', 'Le savoir culturel a été effacé avec succès.');
+                }
+            });
+        }
+    );
 };
 
 const onAudioSelect = (event) => {
@@ -101,9 +160,28 @@ onMounted(() => {
                 </Button>
             </div>
 
+            <!-- SuperAdmin Global City Filter Bar -->
+            <div v-if="isSuperAdmin" class="mb-12 bg-white rounded-[2.5rem] p-8 shadow-xl shadow-blue-100/50 border-2 border-white flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 bg-blue-50 text-[#1DA1F2] rounded-[1.5rem] flex items-center justify-center shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black italic uppercase text-slate-800 tracking-tight">Filtre territorial</h3>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Sélectionner une cité pour concentrer les archives</p>
+                    </div>
+                </div>
+                <div class="w-full sm:w-80">
+                    <select v-model="selectedVilleFilter" class="w-full rounded-2xl bg-slate-50 border-slate-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none cursor-pointer">
+                        <option :value="null">Toutes les Cités du Royaume</option>
+                        <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Content Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <div v-for="contenu in contenus" :key="contenu.id" 
+                <div v-for="contenu in filteredContenus" :key="contenu.id" 
                      @click="editContenu(contenu)"
                      class="culture-card group bg-white rounded-[3rem] p-10 shadow-xl shadow-blue-100 border-2 border-transparent hover:border-[#1DA1F2] transition-all cursor-pointer relative overflow-hidden">
                     
@@ -111,7 +189,7 @@ onMounted(() => {
                     
                     <div class="relative z-10">
                         <div class="flex items-center justify-between mb-8">
-                            <span class="px-4 py-2 bg-blue-50 text-[#1DA1F2] text-[10px] font-black uppercase rounded-xl tracking-widest">{{ contenu.lieu.nom }}</span>
+                            <span class="px-4 py-2 bg-blue-50 text-[#1DA1F2] text-[10px] font-black uppercase rounded-xl tracking-widest">{{ contenu.lieu.nom }} {{ contenu.lieu.ville ? `• ${contenu.lieu.ville.nom}` : '' }}</span>
                             <div v-if="contenu.audio" class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg shadow-yellow-200">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.983 5.983 0 01-1.414 4.243 1 1 0 11-1.414-1.415A3.984 3.984 0 0013 10a3.984 3.984 0 00-1.172-2.828a1 1 0 010-1.415z" clip-rule="evenodd" /></svg>
                             </div>
@@ -132,7 +210,7 @@ onMounted(() => {
                 </div>
 
                 <!-- Empty State -->
-                <div v-if="contenus.length === 0" class="col-span-full py-32 flex flex-col items-center justify-center text-center">
+                <div v-if="filteredContenus.length === 0" class="col-span-full py-32 flex flex-col items-center justify-center text-center">
                     <div class="w-32 h-32 bg-white rounded-[3rem] shadow-2xl flex items-center justify-center mb-8 rotate-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                     </div>
@@ -153,12 +231,19 @@ onMounted(() => {
             </template>
             
             <form @submit.prevent="submit" class="space-y-10 py-8 px-4 font-sans">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="grid grid-cols-1" :class="[isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2', 'gap-10']">
+                    <div v-if="isSuperAdmin" class="space-y-4">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
+                        <select v-model="selectedFormVille" class="w-full rounded-2xl bg-slate-50 border-slate-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
+                            <option :value="null">Toutes les cités...</option>
+                            <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                        </select>
+                    </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Lieu associé</label>
-                        <select v-model="form.lieu_id" :disabled="form.id" class="w-full rounded-2xl bg-slate-50 border-slate-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none disabled:opacity-50">
+                        <select v-model="form.lieu_id" :disabled="form.id" class="w-full rounded-2xl bg-slate-50 border-slate-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none disabled:opacity-50 !block">
                             <option value="" disabled>Choisir un lieu...</option>
-                            <option v-for="lieu in lieux" :key="lieu.id" :value="lieu.id">{{ lieu.nom }}</option>
+                            <option v-for="lieu in filteredLieuxForForm" :key="lieu.id" :value="lieu.id">{{ lieu.nom }} {{ isSuperAdmin && lieu.ville ? `(${lieu.ville.nom})` : '' }}</option>
                         </select>
                     </div>
                     <div class="space-y-4">
@@ -187,6 +272,59 @@ onMounted(() => {
                 </div>
             </form>
         </Dialog>
+
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                        D'accord
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOM CONFIRMATION MODAL -->
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-600 mb-3 relative z-10">
+                        {{ confirmModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+
+                    <div class="flex space-x-3 relative z-10">
+                        <button @click="confirmModal.show = false" 
+                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                            Annuler
+                        </button>
+                        <button @click="confirmModal.onConfirm" 
+                                class="flex-1 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 hover:scale-105 active:scale-95 transition-all">
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -205,6 +343,5 @@ onMounted(() => {
     padding: 0 3rem 3rem 3rem !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 h2, h3, h4, span, button { font-family: 'Bangers', cursive; }
 </style>

@@ -14,22 +14,40 @@ class ContenuCulturelController extends Controller
 {
     public function index()
     {
+        $isSuperAdmin = auth()->user()->hasRole('super_admin');
+        if ($isSuperAdmin) {
+            $villes = Ville::all();
+            $lieux = Lieu::with('ville')->get();
+            $contenus = ContenuCulturel::with('lieu.ville')->get();
+
+            return Inertia::render('Admin/ContenusCulturels/Index', [
+                'contenus' => $contenus,
+                'lieux' => $lieux,
+                'villes' => $villes,
+                'isSuperAdmin' => true
+            ]);
+        }
+
         $ville = Ville::where('user_id', auth()->id())->first();
         if (!$ville) {
             return Inertia::render('Admin/ContenusCulturels/Index', [
                 'contenus' => [],
-                'lieux' => []
+                'lieux' => [],
+                'villes' => [],
+                'isSuperAdmin' => false
             ]);
         }
 
         $lieux = Lieu::where('ville_id', $ville->id)->get();
         $contenus = ContenuCulturel::whereIn('lieu_id', $lieux->pluck('id'))
-            ->with('lieu')
+            ->with('lieu.ville')
             ->get();
 
         return Inertia::render('Admin/ContenusCulturels/Index', [
             'contenus' => $contenus,
-            'lieux' => $lieux
+            'lieux' => $lieux,
+            'villes' => [],
+            'isSuperAdmin' => false
         ]);
     }
 

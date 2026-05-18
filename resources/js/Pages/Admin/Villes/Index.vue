@@ -31,6 +31,36 @@ const props = defineProps({
 const isEditing = ref(false);
 const editingVilleId = ref(null);
 
+const confirmModal = ref({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null
+});
+
+const notifyModal = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+
+const triggerConfirm = (title, message, callback) => {
+    confirmModal.value = {
+        show: true,
+        title,
+        message,
+        onConfirm: () => {
+            confirmModal.value.show = false;
+            callback();
+        }
+    };
+};
+
+const triggerNotify = (type, title, message) => {
+    notifyModal.value = { show: true, type, title, message };
+};
+
 const form = useForm({
     nom: props.ville?.nom || '',
     description: props.ville?.description || '',
@@ -78,14 +108,19 @@ const createVille = () => {
 };
 
 const deleteVille = (id) => {
-    if (confirm("Voulez-vous vraiment détruire cette cité mythique et toutes ses légendes ?")) {
-        form.delete(route('admin.villes.destroy', id), {
-            onSuccess: () => {
-                editingVilleId.value = null;
-                isEditing.value = false;
-            }
-        });
-    }
+    triggerConfirm(
+        "Détruire la Cité ?",
+        "Voulez-vous vraiment détruire cette cité mythique et toutes ses légendes ? Cette action effacera également tout son contenu.",
+        () => {
+            form.delete(route('admin.villes.destroy', id), {
+                onSuccess: () => {
+                    editingVilleId.value = null;
+                    isEditing.value = false;
+                    triggerNotify('success', 'Cité détruite', 'La cité mythique a été retirée des annales de CityPlay.');
+                }
+            });
+        }
+    );
 };
 
 const submit = () => {
@@ -192,7 +227,7 @@ const searchLocation = async () => {
             
             if (!form.nom) form.nom = data[0].name || '';
         } else {
-            alert("Lieu non trouvé");
+            triggerNotify('error', 'Lieu non trouvé', 'Aucun résultat trouvé pour votre recherche géographique.');
         }
     } catch (e) {
         console.error("Erreur de recherche", e);
@@ -434,6 +469,59 @@ onMounted(() => {
                 </form>
             </div>
         </div>
+
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                        D'accord
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOM CONFIRMATION MODAL -->
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-600 mb-3 relative z-10">
+                        {{ confirmModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+
+                    <div class="flex space-x-3 relative z-10">
+                        <button @click="confirmModal.show = false" 
+                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                            Annuler
+                        </button>
+                        <button @click="confirmModal.onConfirm" 
+                                class="flex-1 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 hover:scale-105 active:scale-95 transition-all">
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -9,14 +9,61 @@ import Select from 'primevue/select';
 import gsap from 'gsap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { watch } from 'vue';
 
 const props = defineProps({
     enigmes: Array,
-    lieux: Array
+    lieux: Array,
+    villes: Array,
+    isSuperAdmin: Boolean
 });
 
 const visible = ref(false);
+const selectedVilleFilter = ref(null);
+const selectedFormVille = ref(null);
+
+const filteredEnigmes = computed(() => {
+    if (!props.isSuperAdmin || !selectedVilleFilter.value) {
+        return props.enigmes;
+    }
+    return props.enigmes.filter(e => e.lieu && e.lieu.ville_id === selectedVilleFilter.value);
+});
+
+const filteredLieuxForForm = computed(() => {
+    if (!props.isSuperAdmin || !selectedFormVille.value) {
+        return props.lieux;
+    }
+    return props.lieux.filter(l => l.ville_id === selectedFormVille.value);
+});
+
+const confirmModal = ref({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null
+});
+
+const notifyModal = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+
+const triggerConfirm = (title, message, callback) => {
+    confirmModal.value = {
+        show: true,
+        title,
+        message,
+        onConfirm: () => {
+            confirmModal.value.show = false;
+            callback();
+        }
+    };
+};
+
+const triggerNotify = (type, title, message) => {
+    notifyModal.value = { show: true, type, title, message };
+};
 
 const form = useForm({
     id: null,
@@ -112,6 +159,8 @@ const initMap = () => {
 const openNew = () => {
     form.reset();
     form.id = null;
+    selectedFormVille.value = null;
+    form.indices = [{ contenu: '', penalite: 5 }];
     visible.value = true;
     setTimeout(initMap, 100);
 };
@@ -129,6 +178,9 @@ const editEnigme = (enigme) => {
     form.rayon = enigme.rayon;
     form.verification_gps = !!enigme.verification_gps;
     form.indices = enigme.indices.map(i => ({ contenu: i.contenu, penalite: i.penalite }));
+    if (props.isSuperAdmin && enigme.lieu) {
+        selectedFormVille.value = enigme.lieu.ville_id;
+    }
     visible.value = true;
     setTimeout(initMap, 100);
 };
@@ -149,11 +201,18 @@ const submit = () => {
 };
 
 const deleteEnigme = () => {
-    if (confirm("Voulez-vous vraiment détruire cette énigme des annales ?")) {
-        form.delete(route('admin.enigmes.destroy', form.id), {
-            onSuccess: () => visible.value = false
-        });
-    }
+    triggerConfirm(
+        "Détruire l'énigme ?",
+        "Voulez-vous vraiment détruire cette énigme des annales de CityPlay ?",
+        () => {
+            form.delete(route('admin.enigmes.destroy', form.id), {
+                onSuccess: () => {
+                    visible.value = false;
+                    triggerNotify('success', 'Énigme supprimée', 'L\'énigme a été supprimée avec succès des annales.');
+                }
+            });
+        }
+    );
 };
 
 // Autocenter and auto-fill coordinates when a lieu is selected
@@ -226,9 +285,28 @@ onMounted(() => {
                 </Button>
             </div>
 
+            <!-- SuperAdmin Global City Filter Bar -->
+            <div v-if="isSuperAdmin" class="mb-10 bg-white/5 backdrop-blur-md rounded-[2rem] p-6 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-yellow-400/20 text-yellow-400 rounded-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black italic uppercase text-white tracking-tight">Filtre territorial</h3>
+                        <p class="text-white/40 text-xs font-bold uppercase tracking-wider">Sélectionner une cité pour concentrer le grimoire</p>
+                    </div>
+                </div>
+                <div class="w-full sm:w-72">
+                    <select v-model="selectedVilleFilter" class="w-full rounded-xl bg-white/10 border-white/10 p-3 font-bold text-white focus:ring-2 focus:ring-[#1DA1F2] appearance-none cursor-pointer">
+                        <option :value="null" class="bg-[#0a0c1b]">Toutes les Cités du Royaume</option>
+                        <option v-for="ville in villes" :key="ville.id" :value="ville.id" class="bg-[#0a0c1b]">{{ ville.nom }}</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Enigmes Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <div v-for="enigme in enigmes" :key="enigme.id" @click="editEnigme(enigme)" class="enigme-card group bg-white/5 backdrop-blur-xl rounded-[3rem] p-8 border-2 border-white/10 hover:border-[#1DA1F2]/50 transition-all cursor-pointer shadow-2xl relative">
+                <div v-for="enigme in filteredEnigmes" :key="enigme.id" @click="editEnigme(enigme)" class="enigme-card group bg-white/5 backdrop-blur-xl rounded-[3rem] p-8 border-2 border-white/10 hover:border-[#1DA1F2]/50 transition-all cursor-pointer shadow-2xl relative">
                     <!-- Sketch/Drawing Card Style -->
                     <div class="absolute -top-4 -right-4 w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
                         <span class="text-white font-black text-xl italic">{{ enigme.ordre }}</span>
@@ -243,7 +321,7 @@ onMounted(() => {
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <span class="px-3 py-1 bg-white/10 text-white/40 text-[10px] font-black uppercase rounded-lg tracking-widest">{{ enigme.lieu.nom }}</span>
+                            <span class="px-3 py-1 bg-white/10 text-white/40 text-[10px] font-black uppercase rounded-lg tracking-widest">{{ enigme.lieu.nom }} {{ enigme.lieu.ville ? `• ${enigme.lieu.ville.nom}` : '' }}</span>
                             <span class="px-3 py-1 bg-yellow-400/20 text-yellow-400 text-[10px] font-black uppercase rounded-lg">Niveau {{ enigme.niveau }}</span>
                         </div>
                         <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter group-hover:text-[#1DA1F2] transition-colors">{{ enigme.titre }}</h3>
@@ -285,12 +363,19 @@ onMounted(() => {
                     </ul>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="grid grid-cols-1" :class="[isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2', 'gap-10']">
+                    <div v-if="isSuperAdmin" class="space-y-4">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
+                        <select v-model="selectedFormVille" class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
+                            <option :value="null">Toutes les cités...</option>
+                            <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                        </select>
+                    </div>
                     <div class="space-y-4">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Lieu associé</label>
                         <select v-model="form.lieu_id" class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
                             <option value="" disabled>Choisir un lieu...</option>
-                            <option v-for="lieu in lieux" :key="lieu.id" :value="lieu.id">{{ lieu.nom }}</option>
+                            <option v-for="lieu in filteredLieuxForForm" :key="lieu.id" :value="lieu.id">{{ lieu.nom }} {{ isSuperAdmin && lieu.ville ? `(${lieu.ville.nom})` : '' }}</option>
                         </select>
                     </div>
                     <div class="space-y-4">
@@ -394,6 +479,59 @@ onMounted(() => {
                 </div>
             </form>
         </Dialog>
+
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                        D'accord
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOM CONFIRMATION MODAL -->
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-600 mb-3 relative z-10">
+                        {{ confirmModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+
+                    <div class="flex space-x-3 relative z-10">
+                        <button @click="confirmModal.show = false" 
+                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                            Annuler
+                        </button>
+                        <button @click="confirmModal.onConfirm" 
+                                class="flex-1 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 hover:scale-105 active:scale-95 transition-all">
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -415,7 +553,6 @@ onMounted(() => {
     color: white !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 h2, h3, h4, span, button { font-family: 'Bangers', cursive; }
 
 .custom-scrollbar::-webkit-scrollbar {
