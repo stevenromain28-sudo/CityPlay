@@ -18,17 +18,15 @@ return new class extends Migration
     $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
 
     $table->string('nom');
-
     $table->string('slug')->unique();
-
     $table->text('description')->nullable();
-
+    $table->text('history')->nullable();
     $table->string('pays')->nullable();
-
+    $table->integer('population')->nullable();
+    $table->decimal('latitude', 10, 8)->nullable();
+    $table->decimal('longitude', 11, 8)->nullable();
     $table->string('banniere')->nullable();
-
     $table->boolean('actif')->default(true);
-
     $table->timestamps();
 
 });

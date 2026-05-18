@@ -6,7 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Ville extends Model
 {
-    protected $fillable = ['user_id', 'nom', 'slug', 'description', 'pays', 'banniere', 'actif'];
+    protected $fillable = [
+        'user_id', 
+        'nom', 
+        'slug', 
+        'description', 
+        'history',
+        'pays', 
+        'population',
+        'banniere', 
+        'actif',
+        'latitude',
+        'longitude',
+        'rayon_action'
+    ];
 
     public function user()
     {

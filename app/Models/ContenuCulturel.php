@@ -6,5 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class ContenuCulturel extends Model
 {
-   protected $table = 'contenus_culturels';
+    protected $table = 'contenus_culturels';
+
+    protected $fillable = [
+        'lieu_id',
+        'titre',
+        'description',
+        'audio'
+    ];
+
+    public function lieu()
+    {
+        return $this->belongsTo(Lieu::class);
+    }
 }

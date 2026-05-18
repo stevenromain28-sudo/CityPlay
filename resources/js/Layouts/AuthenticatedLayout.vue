@@ -41,6 +41,13 @@ const showingNavigationDropdown = ref(false);
                                     Admin Dashboard
                                 </NavLink>
                                 <NavLink
+                                    v-if="$page.props.auth.user.roles.includes('admin')"
+                                    :href="route('admin.contenus-culturels.index')"
+                                    :active="route().current('admin.contenus-culturels.index')"
+                                >
+                                    Culture
+                                </NavLink>
+                                <NavLink
                                     v-if="$page.props.auth.user.roles.includes('player')"
                                     :href="route('player.dashboard')"
                                     :active="route().current('player.dashboard')"
@@ -77,7 +84,7 @@ const showingNavigationDropdown = ref(false);
                                             </button>
                                         </span>
                                     </template>
-
+                                    <!-- Contenu du menu -->
                                     <template #content>
                                         <DropdownLink
                                             :href="route('profile.edit')"
@@ -103,7 +110,7 @@ const showingNavigationDropdown = ref(false);
                                     showingNavigationDropdown =
                                         !showingNavigationDropdown
                                 "
-                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
+                                class="hamburger-btn inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
                             >
                                 <svg
                                     class="h-6 w-6"
@@ -145,7 +152,7 @@ const showingNavigationDropdown = ref(false);
                     block: showingNavigationDropdown,
                     hidden: !showingNavigationDropdown,
                 }"
-                class="sm:hidden"
+                class="sm:hidden responsive-menu-container"
             >
                 <div class="space-y-1 pb-3 pt-2">
                     <ResponsiveNavLink
@@ -154,6 +161,13 @@ const showingNavigationDropdown = ref(false);
                         :active="route().current('admin.dashboard')"
                     >
                         Admin Dashboard
+                    </ResponsiveNavLink>
+                    <ResponsiveNavLink
+                        v-if="$page.props.auth.user.roles.includes('admin')"
+                        :href="route('admin.contenus-culturels.index')"
+                        :active="route().current('admin.contenus-culturels.index')"
+                    >
+                        Culture
                     </ResponsiveNavLink>
                     <ResponsiveNavLink
                         v-if="$page.props.auth.user.roles.includes('player')"

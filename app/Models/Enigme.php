@@ -6,7 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class Enigme extends Model
 {
-   public function lieu()
+    protected $fillable = [
+        'lieu_id',
+        'titre',
+        'contenu',
+        'image',
+        'audio',
+        'niveau',
+        'ordre',
+        'reponse',
+        'latitude',
+        'longitude',
+        'rayon',
+        'verification_gps',
+        'is_bonus',
+    ];
+
+    public function lieu()
 {
     return $this->belongsTo(Lieu::class);
 }

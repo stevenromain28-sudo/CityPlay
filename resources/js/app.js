@@ -1,24 +1,39 @@
 import '../css/app.css';
-// import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { createPinia } from 'pinia';
+import PrimeVue from 'primevue/config';
+import Aura from '@primevue/themes/aura';
+import GlobalLoader from './Components/GlobalLoader.vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
+    progress: false, // On désactive le progress par défaut pour mettre le nôtre
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        return createApp({ render: () => h(App, props) })
+        const pinia = createPinia();
+        return createApp({ render: () => h('div', [h(GlobalLoader), h(App, props)]) })
+
             .use(plugin)
             .use(ZiggyVue)
+            .use(pinia)
+            .use(PrimeVue, {
+                theme: {
+                    preset: Aura,
+                    options: {
+                        darkModeSelector: '.dark',
+                    }
+                }
+            })
             .mount(el);
     },
     progress: {

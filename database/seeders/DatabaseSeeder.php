@@ -15,7 +15,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
-            CityPlaySeeder::class,
         ]);
 
         $admin = User::factory()->create([
@@ -31,5 +30,7 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('password'),
         ]);
         $player->assignRole('player');
+
+
     }
 }
