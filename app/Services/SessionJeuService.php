@@ -29,6 +29,7 @@ class SessionJeuService
                 'ville_id' => $data['ville_id'],
                 'proprietaire_id' => $owner->id,
                 'mode' => $data['mode'], // cooperatif ou mercenaire
+                'moyen_transport' => $data['moyen_transport'] ?? 'pied',
                 'current_enigme_id' => $data['enigme_id'] ?? null,
                 'statut' => 'en_attente',
                 'duree_initiale' => $dureeMinutes,

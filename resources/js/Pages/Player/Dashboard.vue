@@ -23,6 +23,8 @@ const creationInvitation = ref(false);
 const showDurationModal = ref(false);
 const duration = ref(45);
 const durationError = ref('');
+const currentStep = ref(1); // 1: choix temps, 2: choix déplacement
+const selectedTransport = ref(null);
 
 onMounted(() => {
     if (props.localisation_requise) {
@@ -88,6 +90,8 @@ const obtenirLocalisation = () => {
 
 const openStartModal = () => {
     showDurationModal.value = true;
+    currentStep.value = 1;
+    selectedTransport.value = null;
 };
 
 const lancerJeu = () => {
@@ -96,6 +100,12 @@ const lancerJeu = () => {
         return;
     }
 
+    currentStep.value = 2;
+};
+
+const confirmTransport = (transport) => {
+    selectedTransport.value = transport;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');
     const lng = urlParams.get('lng');
@@ -105,6 +115,7 @@ const lancerJeu = () => {
         lat: lat,
         lng: lng,
         duree: duration.value,
+        moyen_transport: selectedTransport.value,
         nouvelle_session: true // Indiquer que c'est une nouvelle session, même si une existe
     });
 };
@@ -268,37 +279,88 @@ const creerInvitation = () => {
                 </div>
             </div>
 
-            <!-- Duration Selection Modal -->
+            <!-- Duration & Transport Selection Modal -->
             <div v-if="showDurationModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showDurationModal = false"></div>
-                <div class="bg-white rounded-[3rem] p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/20">
-                    <div class="w-24 h-24 bg-yellow-100 text-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
+                <div class="bg-white rounded-[3rem] p-8 md:p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/20">
                     
-                    <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Nouvelle Quête</h3>
-                    <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Combien de temps durera votre aventure ?</p>
-
-                    <div class="space-y-6 mb-10">
-                        <div class="relative">
-                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-left ml-4">Durée de la session (min)</label>
-                            <input type="number" v-model="duration" min="45"
-                                   class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 px-8 text-2xl font-black text-slate-800 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all text-center">
-                            <div class="absolute right-6 top-[55px] text-slate-300 font-black uppercase text-xs italic">min</div>
+                    <!-- STEP 1: CHOIX TEMPS -->
+                    <div v-if="currentStep === 1">
+                        <div class="w-24 h-24 bg-yellow-100 text-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
                         
-                        <p v-if="durationError" class="text-red-500 font-black uppercase text-[10px] animate-bounce">{{ durationError }}</p>
-                        <p v-else class="text-slate-400 font-bold text-[10px] uppercase">Minimum requis : 45 minutes</p>
+                        <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Nouvelle Quête</h3>
+                        <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Combien de temps durera votre aventure ?</p>
+
+                        <div class="space-y-6 mb-10">
+                            <div class="relative">
+                                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-left ml-4">Durée de la session (min)</label>
+                                <input type="number" v-model="duration" min="45"
+                                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 px-8 text-2xl font-black text-slate-800 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all text-center">
+                                <div class="absolute right-6 top-[55px] text-slate-300 font-black uppercase text-xs italic">min</div>
+                            </div>
+                            
+                            <p v-if="durationError" class="text-red-500 font-black uppercase text-[10px] animate-bounce">{{ durationError }}</p>
+                            <p v-else class="text-slate-400 font-bold text-[10px] uppercase">Minimum requis : 45 minutes</p>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button @click="showDurationModal = false" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-md">
+                                Annuler
+                            </button>
+                            <button @click="lancerJeu" class="flex-1 py-5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:scale-105 active:scale-95 transition-all">
+                                Suivant
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="flex gap-4">
-                        <button @click="showDurationModal = false" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-md">
-                            Annuler
-                        </button>
-                        <button @click="lancerJeu" class="flex-1 py-5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:scale-105 active:scale-95 transition-all">
-                            Démarrer !
+                    <!-- STEP 2: CHOIX DEPLACEMENT -->
+                    <div v-if="currentStep === 2">
+                        <div class="w-24 h-24 bg-blue-100 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </div>
+
+                        <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Déplacement</h3>
+                        <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Comment allez-vous vous déplacer ?</p>
+
+                        <div class="grid grid-cols-1 gap-4 mb-8">
+                            <button @click="confirmTransport('pied')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+                                <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M4 17l3-2 3 1 1-2"/><path d="M14 7l-2 2v3l2 2"/><path d="M15 21l-2-4-3 1"/><path d="M9 21l2-4"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <span class="block text-xl font-black uppercase text-slate-800 italic">À Pied</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pour les explorateurs</span>
+                                </div>
+                            </button>
+
+                            <button @click="confirmTransport('moto')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+                                <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M12 17h1.5l3-3.5"/><path d="M8.5 17l2-5h5.5l1.5 5"/><path d="M11.5 12l.5-4h3l.5 4"/><path d="M13 8l1-3h3"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <span class="block text-xl font-black uppercase text-slate-800 italic">En Moto</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pour les rapides</span>
+                                </div>
+                            </button>
+
+                            <button @click="confirmTransport('voiture')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+                                <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <span class="block text-xl font-black uppercase text-slate-800 italic">En Voiture</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pour le confort</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <button @click="currentStep = 1" class="w-full py-4 text-slate-400 font-black uppercase text-xs tracking-[0.3em] hover:text-slate-600 transition-colors">
+                            Retour
                         </button>
                     </div>
+
                 </div>
             </div>
 

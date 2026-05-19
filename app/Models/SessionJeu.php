@@ -22,6 +22,7 @@ class SessionJeu extends Model
         'commence_le',
         'termine_le',
         'equipe_id',
+        'moyen_transport',
     ];
 
     public function currentEnigme()

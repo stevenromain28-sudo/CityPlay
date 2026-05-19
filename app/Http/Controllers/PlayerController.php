@@ -560,6 +560,7 @@ class PlayerController extends Controller
                 'ville_id' => $villeId,
                 'mode' => 'cooperatif', // Par défaut
                 'duree' => $request->input('duree', 45),
+                'moyen_transport' => $request->input('moyen_transport', 'pied'),
             ];
 
             // Si dans une équipe, ajouter l'équipe à la session
