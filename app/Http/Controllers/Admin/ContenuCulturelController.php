@@ -58,14 +58,25 @@ class ContenuCulturelController extends Controller
             'titre' => 'required|string|max:255',
             'description' => 'required|string',
             'audio' => 'nullable|file|mimes:mp3,wav,ogg|max:10240',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $data = $request->all();
+        $data = $request->only(['lieu_id', 'titre', 'description']);
 
         if ($request->hasFile('audio')) {
             $path = $request->file('audio')->store('culturel/audio', 'public');
             $data['audio'] = Storage::url($path);
         }
+
+        $imagesPaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('culturel/images', 'public');
+                $imagesPaths[] = Storage::url($path);
+            }
+        }
+        $data['images'] = $imagesPaths;
 
         ContenuCulturel::create($data);
 
@@ -78,9 +89,12 @@ class ContenuCulturelController extends Controller
             'titre' => 'required|string|max:255',
             'description' => 'required|string',
             'audio' => 'nullable|file|mimes:mp3,wav,ogg|max:10240',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'existing_images' => 'nullable|array',
         ]);
 
-        $data = $request->all();
+        $data = $request->only(['titre', 'description']);
 
         if ($request->hasFile('audio')) {
             if ($contenuCulturel->audio) {
@@ -90,6 +104,29 @@ class ContenuCulturelController extends Controller
             $path = $request->file('audio')->store('culturel/audio', 'public');
             $data['audio'] = Storage::url($path);
         }
+
+        // Handle existing images remaining
+        $existingImages = $request->input('existing_images', []);
+        $currentImages = $contenuCulturel->images ?? [];
+
+        // Delete removed images from storage
+        foreach ($currentImages as $imgUrl) {
+            if (!in_array($imgUrl, $existingImages)) {
+                $oldImgPath = str_replace('/storage/', '', $imgUrl);
+                Storage::disk('public')->delete($oldImgPath);
+            }
+        }
+
+        // Upload new images
+        $newImages = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('culturel/images', 'public');
+                $newImages[] = Storage::url($path);
+            }
+        }
+
+        $data['images'] = array_merge($existingImages, $newImages);
 
         $contenuCulturel->update($data);
 
@@ -102,6 +139,14 @@ class ContenuCulturelController extends Controller
             $oldPath = str_replace('/storage/', '', $contenuCulturel->audio);
             Storage::disk('public')->delete($oldPath);
         }
+
+        // Delete all images from storage
+        $images = $contenuCulturel->images ?? [];
+        foreach ($images as $imgUrl) {
+            $oldImgPath = str_replace('/storage/', '', $imgUrl);
+            Storage::disk('public')->delete($oldImgPath);
+        }
+
         $contenuCulturel->delete();
         return redirect()->back()->with('success', 'Contenu culturel supprimé !');
     }

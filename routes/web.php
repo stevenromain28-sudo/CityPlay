@@ -89,6 +89,7 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     
     // Auto-start game from dashboard
     Route::post('/game/auto-start', [PlayerController::class, 'autoStart'])->name('game.auto-start');
+    Route::get('/join-city/{ville}', [PlayerController::class, 'joinCity'])->name('join-city');
 
     // Sessions de jeu
     Route::resource('sessions', SessionJeuController::class);

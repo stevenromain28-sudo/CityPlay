@@ -7,7 +7,8 @@ import gsap from 'gsap';
 const props = defineProps({
     stats: Object,
     ma_ville: Object,
-    recent_lieux: Array
+    recent_lieux: Array,
+    villes: Array
 });
 
 const dashboardContainer = ref(null);
@@ -80,20 +81,40 @@ const triggerNotify = (type, title, message) => {
     notifyModal.value = { show: true, type, title, message };
 };
 
+import { watch } from 'vue';
+
+const selectedCityId = ref(null);
 const invitationLink = ref('');
+
+watch(selectedCityId, () => {
+    invitationLink.value = '';
+});
+
 const generateLink = () => {
     if (invitationLink.value) {
         navigator.clipboard.writeText(invitationLink.value);
         triggerNotify('success', 'Lien Copié', 'Le lien d\'invitation a été copié dans votre presse-papier !');
         return;
     }
-    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
-    invitationLink.value = window.location.origin + '/join/' + token;
+    
+    let targetCityId = null;
+    if (props.ma_ville) {
+        targetCityId = props.ma_ville.id;
+    } else if (selectedCityId.value) {
+        targetCityId = selectedCityId.value;
+    }
+
+    if (!targetCityId) {
+        triggerNotify('error', 'Sélection Requise', 'Veuillez sélectionner une ville pour générer le lien d\'invitation.');
+        return;
+    }
+
+    invitationLink.value = window.location.origin + '/play/join-city/' + targetCityId;
     
     // Copy automatically on first generation
     setTimeout(() => {
         navigator.clipboard.writeText(invitationLink.value);
-        triggerNotify('success', 'Lien Généré', 'Le lien d\'invitation épique a été généré et copié dans le presse-papier !');
+        triggerNotify('success', 'Lien Généré', 'Le lien d\'invitation fonctionnel a été généré et copié dans le presse-papier !');
     }, 100);
 };
 </script>
@@ -115,7 +136,7 @@ const generateLink = () => {
 
         <!-- Sidebar -->
         <aside :class="{'translate-x-0': isMobileMenuOpen, '-translate-x-full': !isMobileMenuOpen}"
-               class="fixed md:relative inset-y-0 left-0 flex w-24 lg:w-32 bg-[#1DA1F2] flex-col items-center pt-10 pb-6 md:py-10 shadow-[5px_0_30px_rgba(29,161,242,0.1)] z-[100] transition-transform duration-300 ease-in-out md:translate-x-0 overflow-y-auto no-scrollbar">
+               class="fixed md:relative inset-y-0 left-0 flex w-24 lg:w-32 bg-[#1DA1F2] flex-col items-center pt-10 pb-6 md:py-10 shadow-[5px_0_30px_rgba(29,161,242,0.1)] z-[100] transition-transform duration-300 ease-in-out md:translate-x-0 overflow-x-hidden md:overflow-x-visible overflow-y-auto md:overflow-y-visible no-scrollbar">
             <div class="mb-10 md:mb-16 shrink-0">
                 <div class="w-16 h-16 bg-yellow-400 rounded-3xl flex items-center justify-center shadow-xl rotate-3 hover:rotate-0 transition-transform duration-300">
                     <!-- Eiffel Tower / City Icon -->
@@ -285,21 +306,32 @@ const generateLink = () => {
 
                 <!-- Invitation Section -->
                 <section class="content-section bg-white rounded-3xl md:rounded-[3rem] p-6 md:p-10 shadow-xl shadow-blue-50 border border-blue-50">
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
+                    <div class="flex flex-col xl:flex-row items-center justify-between gap-6 md:gap-8">
                         <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6 text-center md:text-left">
-                            <div class="w-16 h-16 md:w-20 md:h-20 bg-yellow-400 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-white shadow-xl rotate-3">
+                            <div class="w-16 h-16 md:w-20 md:h-20 bg-yellow-400 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-white shadow-xl rotate-3 shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                             </div>
                             <div>
-                                <h3 class="text-2xl md:text-3xl font-black italic uppercase text-slate-800 tracking-tighter">Recruter des <span class="text-[#1DA1F2]">Explorateurs</span></h3>
-                                <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest mt-1">Générez un lien d'accès épique</p>
+                                <h3 class="text-2xl md:text-3xl font-black italic uppercase text-slate-800 tracking-tighter leading-none mb-1">Recruter des <span class="text-[#1DA1F2]">Explorateurs</span></h3>
+                                <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest">Générez un lien d'accès fonctionnel</p>
                             </div>
                         </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                            <div class="w-full md:w-96 bg-blue-50 rounded-xl md:rounded-2xl px-4 py-3 md:px-6 md:py-4 font-bold text-slate-400 text-[10px] md:text-xs truncate border-2 border-dashed border-blue-100 text-center">
-                                {{ invitationLink || 'CLIQUEZ POUR GÉNÉRER' }}
+                        <div class="flex flex-col sm:flex-row items-end gap-4 w-full xl:w-auto">
+                            <!-- Dropdown de sélection pour Super Admin -->
+                            <div v-if="$page.props.auth.user.roles.includes('super_admin')" class="w-full sm:w-60 flex flex-col space-y-1">
+                                <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider ml-1">Ville cible</span>
+                                <select v-model="selectedCityId" class="w-full bg-blue-50 border-none rounded-xl py-3 px-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#1DA1F2] transition-all">
+                                    <option :value="null" disabled>Choisir une ville...</option>
+                                    <option v-for="ville in villes" :key="ville.id" :value="ville.id">
+                                        {{ ville.nom }}
+                                    </option>
+                                </select>
                             </div>
-                            <button @click="generateLink" class="w-full sm:w-auto px-6 py-3 md:px-8 md:py-4 bg-[#1DA1F2] text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95">
+
+                            <div class="w-full sm:w-96 bg-blue-50 rounded-xl md:rounded-2xl px-4 py-3 md:px-6 md:py-4 font-bold text-slate-400 text-[10px] md:text-xs truncate border-2 border-dashed border-blue-100 text-center flex items-center justify-center min-h-[46px]">
+                                {{ invitationLink || 'CLIQUEZ SUR GÉNÉRER' }}
+                            </div>
+                            <button @click="generateLink" class="w-full sm:w-auto px-6 py-3 md:px-8 md:py-4 bg-[#1DA1F2] text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95 whitespace-nowrap min-h-[46px]">
                                 {{ invitationLink ? 'Copier' : 'Générer' }}
                             </button>
                         </div>
@@ -311,20 +343,23 @@ const generateLink = () => {
         <!-- CUSTOM NOTIFICATION MODAL -->
         <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+            <div :class="`relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden ${notifyModal.type === 'error' ? 'border-red-300 bg-gradient-to-br from-red-400 to-red-600' : 'border-green-300 bg-gradient-to-br from-green-400 to-green-600'}`">
                 <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                    <div v-if="notifyModal.type === 'error'" class="w-20 h-20 mx-auto bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </div>
+                    <div v-else class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                    <h3 :class="`text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10 ${notifyModal.type === 'error' ? 'text-red-600' : 'text-green-600'}`">
                         {{ notifyModal.title }}
                     </h3>
                     
                     <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
 
                     <button @click="notifyModal.show = false" 
-                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                            :class="`w-full py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 ${notifyModal.type === 'error' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-green-500 hover:bg-green-600 shadow-green-500/20'}`">
                         D'accord
                     </button>
                 </div>

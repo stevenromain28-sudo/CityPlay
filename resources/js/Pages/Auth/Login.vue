@@ -212,12 +212,6 @@ onMounted(() => {
                         Ready for the next discovery?
                     </div>
                 </div>
-
-                <div class="mt-12 flex gap-4">
-                    <button class="btn-game-hover bg-white/10 hover:bg-white/20 border-2 border-white/20 p-4 rounded-2xl shadow-[0_4px_0_rgba(0,0,0,0.2)] text-xl text-white">🏠</button>
-                    <button class="btn-game-hover bg-white/10 hover:bg-white/20 border-2 border-white/20 p-4 rounded-2xl shadow-[0_4px_0_rgba(0,0,0,0.2)] text-xl text-white">🔊</button>
-                    <button class="btn-game-hover bg-white/10 hover:bg-white/20 border-2 border-white/20 p-4 rounded-2xl shadow-[0_4px_0_rgba(0,0,0,0.2)] text-xl text-white">⚙️</button>
-                </div>
             </div>
 
         </div>

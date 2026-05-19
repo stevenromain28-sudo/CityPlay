@@ -315,4 +315,42 @@ class PlayerController extends Controller
         // 4. Sinon, impossible de démarrer
         return back()->with('error', 'Impossible de démarrer : aucune ville détectée ou session active.');
     }
+
+    /**
+     * Rejoindre directement le jeu pour une ville spécifique (lien d'invitation).
+     */
+    public function joinCity(Request $request, Ville $ville)
+    {
+        $user = auth()->user();
+        $sessionService = new SessionJeuService();
+
+        // 1. Chercher une session active pour cet utilisateur dans cette ville
+        $session = SessionJeu::whereHas('joueurs', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })
+        ->where('ville_id', $ville->id)
+        ->whereIn('statut', ['actif', 'en_attente', 'pause'])
+        ->latest('updated_at')
+        ->first();
+
+        // 2. Si une session existe, on la reprend
+        if ($session) {
+            if ($session->statut === 'en_attente' || $session->statut === 'pause') {
+                $sessionService->reprendreSession($session);
+                if ($session->statut === 'en_attente') {
+                    $sessionService->commencerSession($session);
+                }
+            }
+        } else {
+            // 3. Sinon, on en crée une nouvelle
+            $session = $sessionService->creerSession($user, [
+                'ville_id' => $ville->id,
+                'mode' => 'cooperatif'
+            ]);
+            $sessionService->commencerSession($session);
+        }
+
+        return redirect()->route('player.game.jeu', $session)
+            ->with('success', "Bienvenue dans l'aventure à {$ville->nom} !");
+    }
 }
