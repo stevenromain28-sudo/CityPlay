@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { Head, useForm, Link, router } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -8,13 +8,15 @@ import gsap from 'gsap';
 
 const props = defineProps({
     users: Array,
-    roles: Array
+    roles: Array,
+    pendingRequests: Array,
 });
 
 const isMobileMenuOpen = ref(false);
 const visible = ref(false);
 const isEditing = ref(false);
 const editingUserId = ref(null);
+const isRequestsModalVisible = ref(false);
 
 const form = useForm({
     name: '',
@@ -107,6 +109,36 @@ const submit = () => {
     }
 };
 
+const approveRequest = (request) => {
+    triggerConfirm(
+        "Approuver la demande ?",
+        `Voulez-vous vraiment approuver la demande d'adhésion de ${request.name} en tant qu'administrateur ?`,
+        () => {
+            router.post(route('admin.users.approve-admin', request.id), {}, {
+                onSuccess: () => {
+                    isRequestsModalVisible.value = false;
+                    triggerNotify('success', 'Demande approuvée', 'L\'utilisateur a été promu administrateur.');
+                }
+            });
+        }
+    );
+};
+
+const rejectRequest = (request) => {
+    triggerConfirm(
+        "Refuser la demande ?",
+        `Voulez-vous vraiment refuser la demande d'adhésion de ${request.name} ?`,
+        () => {
+            router.post(route('admin.users.reject-admin', request.id), {}, {
+                onSuccess: () => {
+                    isRequestsModalVisible.value = false;
+                    triggerNotify('success', 'Demande refusée', 'La demande a été rejetée avec succès.');
+                }
+            });
+        }
+    );
+};
+
 onMounted(() => {
     gsap.from('.user-card', {
         y: 20,
@@ -184,6 +216,16 @@ onMounted(() => {
                 </div>
 
                 <div class="flex items-center space-x-4 md:space-x-10">
+                    <!-- Bouton Notification Demandes -->
+                    <button @click="isRequestsModalVisible = true" class="relative p-3 bg-blue-50 hover:bg-blue-100 text-[#1DA1F2] rounded-2xl transition-all hover:scale-105 shrink-0 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span v-if="pendingRequests && pendingRequests.length > 0" class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white animate-bounce leading-none">
+                            {{ pendingRequests.length }}
+                        </span>
+                    </button>
+
                     <div class="flex items-center space-x-3 md:space-x-5 md:pl-10 md:border-l-2 md:border-blue-50">
                         <div class="text-right hidden sm:block">
                             <p class="text-slate-800 font-black text-sm md:text-lg uppercase italic leading-tight">{{ $page.props.auth.user.name }}</p>
@@ -300,6 +342,54 @@ onMounted(() => {
                 </div>
             </div>
         </main>
+
+        <!-- Pending Requests Dialog -->
+        <Dialog v-model:visible="isRequestsModalVisible" modal :style="{ width: '45rem' }" class="prime-custom-dialog">
+            <template #header>
+                <div class="flex items-center">
+                    <span class="text-3xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">
+                        Demandes d'Adhésion Admin
+                    </span>
+                </div>
+            </template>
+            
+            <div class="py-4 font-sans px-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div v-if="!pendingRequests || pendingRequests.length === 0" class="text-center py-10 text-slate-400 font-bold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto stroke-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                    </svg>
+                    Aucune demande d'adhésion en attente.
+                </div>
+                <div v-else class="space-y-4">
+                    <div v-for="request in pendingRequests" :key="request.id" class="bg-blue-50/40 border border-blue-100 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-lg font-black italic uppercase text-slate-800 tracking-tight">{{ request.name }}</h4>
+                                <span class="px-2.5 py-0.5 bg-yellow-100 text-yellow-600 text-[8px] font-black uppercase tracking-wider rounded-md">Adhésion</span>
+                            </div>
+                            <p class="text-xs font-bold text-[#1DA1F2]">{{ request.email }}</p>
+                            <p class="text-xs text-slate-500 font-bold">
+                                Ville souhaitée : 
+                                <span class="font-black text-slate-800 uppercase italic text-yellow-600">{{ request.requested_city }}</span>
+                            </p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">Demandé le {{ request.created_at }}</p>
+                        </div>
+                        <div class="flex space-x-2 shrink-0">
+                            <Button @click="rejectRequest(request)" class="!px-4 !py-2.5 !bg-red-50 hover:!bg-red-100 !text-red-500 !border-none !rounded-xl transition-colors">
+                                <template #default>
+                                    <span class="font-black uppercase tracking-wider text-xs">Refuser</span>
+                                </template>
+                            </Button>
+                            <Button @click="approveRequest(request)" class="!px-4 !py-2.5 !bg-[#1DA1F2] hover:!bg-[#1DA1F2]/90 !text-white !border-none !rounded-xl transition-colors shadow-md shadow-blue-500/10">
+                                <template #default>
+                                    <span class="font-black uppercase tracking-wider text-xs">Approuver</span>
+                                </template>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Dialog>
 
         <!-- Form Dialog -->
         <Dialog v-model:visible="visible" modal :style="{ width: '40rem' }" class="prime-custom-dialog">

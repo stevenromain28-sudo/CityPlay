@@ -27,10 +27,44 @@ class UserController extends Controller
 
         $roles = Role::all()->pluck('name');
 
+        $pendingRequests = User::where('admin_request_status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'requested_city' => $user->requested_city,
+                    'created_at' => $user->created_at->format('d/m/Y H:i'),
+                ];
+            });
+
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
-            'roles' => $roles
+            'roles' => $roles,
+            'pendingRequests' => $pendingRequests,
         ]);
+    }
+
+    public function approveAdmin(User $user)
+    {
+        $user->update([
+            'admin_request_status' => 'approved',
+        ]);
+
+        $user->syncRoles(['admin']);
+
+        return redirect()->back()->with('success', "La demande d'adhésion de {$user->name} a été approuvée !");
+    }
+
+    public function rejectAdmin(User $user)
+    {
+        $user->update([
+            'admin_request_status' => 'rejected',
+        ]);
+
+        return redirect()->back()->with('success', "La demande d'adhésion de {$user->name} a été refusée.");
     }
 
     public function store(Request $request)

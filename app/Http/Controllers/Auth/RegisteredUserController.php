@@ -19,9 +19,11 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'adminRequest' => $request->query('admin_request') === '1',
+        ]);
     }
 
     /**
@@ -35,12 +37,18 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'admin_request' => 'nullable',
+            'requested_city' => 'required_if:admin_request,true,1|nullable|string|max:255',
         ]);
+
+        $isAdminRequest = $request->boolean('admin_request');
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'admin_request_status' => $isAdminRequest ? 'pending' : null,
+            'requested_city' => $isAdminRequest ? $request->requested_city : null,
         ]);
 
         $user->assignRole('player');
