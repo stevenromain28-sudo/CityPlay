@@ -371,15 +371,54 @@ class GameplayController extends Controller
             ]);
         }
 
-        if ($request->inertia()) {
-            return redirect()->route('player.dashboard')->with('success', 'En route pour le prochain lieu !');
+        // Si wants_bonus est false : trouver le prochain lieu non complété et rediriger vers lieu.dashboard !
+        $equipe = $user->equipe;
+        
+        // 1. Déterminer quels lieux ont déjà été complétés
+        $lieuxDejaCompletes = collect();
+        if ($equipe) {
+            $lieuxDejaCompletes = \App\Models\Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($equipe) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($equipe) {
+                          $q2->whereHas('user', function ($q3) use ($equipe) {
+                              $q3->where('equipe_id', $equipe->id);
+                          })->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        } else {
+            $lieuxDejaCompletes = \App\Models\Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($user) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($user) {
+                          $q2->where('user_id', $user->id)->where('succes', true);
+                      });
+                })
+                ->pluck('id');
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'En route pour le prochain lieu !',
-            'next_location' => true
-        ]);
+        // 2. Chercher le prochain lieu non complété
+        $lieuProche = \App\Models\Lieu::where('ville_id', $session->ville_id)
+            ->whereNotIn('id', $lieuxDejaCompletes)
+            ->first();
+
+        if ($lieuProche) {
+            // Réinitialiser l'énigme courante de la session
+            $session->update(['current_enigme_id' => null]);
+            
+            // Rediriger vers la page LieuDashboard pour choisir l'énigme !
+            return redirect()->route('player.lieu.dashboard', [
+                'ville' => $session->ville_id,
+                'lieu' => $lieuProche->id
+            ]);
+        } else {
+            // Tous les lieux sont complétés : rediriger vers la page dédiée
+            return Inertia::render('Player/TousLieuxVisites', [
+                'session' => $session->load('ville'),
+                'equipe' => $equipe,
+            ]);
+        }
     }
 
     /**

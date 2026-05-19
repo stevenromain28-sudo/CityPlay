@@ -29,31 +29,35 @@ const scrollToChallenges = () => {
 const jouerEnigme = (enigme) => {
     console.log('=== jouerEnigme ===');
     console.log('activeSession.value:', activeSession.value);
+    console.log('enigme:', enigme);
     
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');
     const lng = urlParams.get('lng');
 
-    // Si une session existe déjà : rediriger directement vers la session !
+    // Si une session existe déjà : utiliser notre endpoint pour définir l'énigme
     if (activeSession.value) {
-        console.log('→ Rediriger vers session existante:', activeSession.value.id);
-        const url = route('player.game.jeu', {
+        console.log('→ Session existante, définir énigme:', enigme.id);
+        let url = route('player.game.choisir-enigme', {
             session: activeSession.value.id,
-            lat: lat,
-            lng: lng
+            enigme: enigme.id
         });
+        if (lat && lng) {
+            url += `?lat=${lat}&lng=${lng}`;
+        }
         console.log('→ URL:', url);
-        window.location.href = url; // Forcer un refresh complet
+        window.location.href = url;
         return;
     }
 
-    // Sinon : créer une nouvelle session
-    console.log('→ Créer nouvelle session');
+    // Sinon : créer une nouvelle session avec l'énigme_id
+    console.log('→ Créer nouvelle session avec énigme:', enigme.id);
     router.post(route('player.game.auto-start'), {
         ville_id: props.ville.id,
         lat: lat,
         lng: lng,
-        duree: 45
+        duree: 45,
+        enigme_id: enigme.id
     });
 };
 

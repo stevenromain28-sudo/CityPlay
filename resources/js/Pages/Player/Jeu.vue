@@ -416,7 +416,7 @@ const isIndiceUnlocked = (indiceId) => {
                         <div v-if="isGpsValidated" class="text-center py-10">
                             <h3 class="text-3xl font-black italic uppercase text-[#7C3AED] mb-8">Bravo ! Vous avez terminé ce lieu.</h3>
                             <div class="flex flex-col sm:flex-row gap-6 justify-center">
-                                <button @click="router.reload()" class="px-10 py-5 bg-slate-800 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl">
+                                <button @click="faireChoixBonus(false)" class="px-10 py-5 bg-slate-800 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl">
                                     Lieu suivant
                                 </button>
                                 <button @click="faireChoixBonus(true)" class="px-10 py-5 bg-yellow-400 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-yellow-500 transition-all shadow-xl">

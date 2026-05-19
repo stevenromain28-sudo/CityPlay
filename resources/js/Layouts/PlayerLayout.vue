@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
+import { useGameStore } from '@/Stores/game.js'; // On importe ton store Pinia
 import gsap from 'gsap';
 import axios from 'axios';
 
@@ -9,130 +10,73 @@ const props = defineProps({
 });
 
 const page = usePage();
+const gameStore = useGameStore(); // On initialise le store ici
+
 const activeSession = computed(() => page.props.active_session);
 const isDashboard = computed(() => {
     const dashboardUrl = route('player.dashboard');
-    const currentUrl = page.url.split('?')[0]; // Enlever les paramètres de requête
-    
-    // Convertir dashboardUrl en chemin relatif (enlever l'origin http://...)
+    const currentUrl = page.url.split('?')[0]; 
     const dashboardPath = new URL(dashboardUrl).pathname;
-    const result = currentUrl === dashboardPath;
-    
-    console.log('isDashboard CHECK:', { 
-        currentUrl, 
-        dashboardUrl, 
-        dashboardPath, 
-        result 
-    });
-    
-    return result;
+    return currentUrl === dashboardPath;
 });
 
+// ON GARDE : Tes états importants pour l'affichage de tes modales
 const dashboardContainer = ref(null);
 const showLogoutModal = ref(false);
 const showPauseModal = ref(false);
+const showTimeUpModal = ref(false);
 
-// Gestion du Temps Global
-const tempsRestant = ref(0);
-const sessionStatut = ref(null);
-let timerInterval = null;
 let heartbeatInterval = null;
-let lastSyncTime = 0;
 
-const formatTemps = (secondes) => {
-    const h = Math.floor(secondes / 3600);
-    const m = Math.floor((secondes % 3600) / 60);
-    const s = secondes % 60;
-    return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-};
-
-const updateTimerFromSession = () => {
-    // SI ON EST SUR LE DASHBOARD : NE PAS AFFICHER NI LANCER LE TIMER !
-    if (isDashboard.value) {
-        stopTimer();
-        tempsRestant.value = 0;
-        sessionStatut.value = null;
+// ON CENTRALISE : Un seul watcher intelligent pour piloter l'état du jeu et les modales
+watch(() => activeSession.value, (newSession) => {
+    // Si on est sur le dashboard ou qu'il n'y a pas de session, on coupe le chrono
+    if (isDashboard.value || !newSession) {
+        gameStore.stopTimer();
         showPauseModal.value = false;
         showTimeUpModal.value = false;
-        lastSyncTime = 0;
         return;
     }
 
-    if (activeSession.value) {
-        const serverTime = activeSession.value.temps_restant;
-        sessionStatut.value = activeSession.value.statut;
-        
-        // Synchronisation si dérive > 2s pour plus de précision "normale"
-        if (lastSyncTime === 0 || Math.abs(tempsRestant.value - serverTime) > 2) {
-            tempsRestant.value = serverTime;
-            lastSyncTime = Date.now();
-        }
+    // On envoie la session à Pinia qui décide s'il faut lancer ou stopper le chronomètre
+    gameStore.setSession(newSession);
 
-        if (sessionStatut.value === 'actif') {
-            startTimer();
-            showPauseModal.value = false;
-            showTimeUpModal.value = false;
-        } else {
-            stopTimer();
-            if (sessionStatut.value === 'pause') {
-                showPauseModal.value = true;
-                showTimeUpModal.value = false;
-            } else if (sessionStatut.value === 'temps_epuise') {
-                showPauseModal.value = false;
-                handleTimeUp();
-            }
-        }
+    // ON GARDE : Ta logique de détection pour ouvrir les bonnes fenêtres modales
+    if (newSession.statut === 'pause') {
+        showPauseModal.value = true;
+        showTimeUpModal.value = false;
+    } else if (newSession.statut === 'temps_epuise' || gameStore.tempsRestant <= 0) {
+        showPauseModal.value = false;
+        showTimeUpModal.value = true;
     } else {
-        stopTimer();
-        tempsRestant.value = 0;
-        sessionStatut.value = null;
         showPauseModal.value = false;
         showTimeUpModal.value = false;
-        lastSyncTime = 0;
     }
-};
+}, { deep: true, immediate: true });
 
-const startTimer = () => {
-    // On nettoie l'ancien intervalle s'il existe pour éviter les doublons
-    if (timerInterval) clearInterval(timerInterval);
-    
-    timerInterval = setInterval(() => {
-        // On vérifie directement sur activeSession pour plus de sécurité
-        if (sessionStatut.value === 'actif' && tempsRestant.value > 0) {
-            tempsRestant.value--;
-        } else if (tempsRestant.value <= 0 && sessionStatut.value === 'actif') {
-            sessionStatut.value = 'temps_epuise';
-            handleTimeUp();
-            stopTimer();
-        } else {
-            stopTimer();
-        }
-    }, 1000);
-};
-
-const stopTimer = () => {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+// Sécurité supplémentaire si l'utilisateur navigue vers le Dashboard
+watch(() => isDashboard.value, (onDashboard) => {
+    if (onDashboard) {
+        gameStore.stopTimer();
     }
-};
+});
 
+// ON GARDE : Ton Heartbeat de synchronisation serveur
 const startHeartbeat = () => {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(async () => {
-        if (activeSession.value && (sessionStatut.value === 'actif' || sessionStatut.value === 'temps_epuise' || sessionStatut.value === 'pause')) {
+        if (activeSession.value && gameStore.session?.statut === 'actif') {
             try {
                 const response = await axios.post(route('player.sessions.heartbeat', activeSession.value.id));
-                const serverTime = response.data.temps_restant;
                 
-                // Sync si dérive importante
-                if (Math.abs(tempsRestant.value - serverTime) > 3) {
-                    tempsRestant.value = serverTime;
+                // Si le serveur et le chronomètre local ont plus de 3s de décalage, on recale Pinia
+                if (Math.abs(gameStore.tempsRestant - response.data.temps_restant) > 3) {
+                    gameStore.syncTempsForce(response.data.temps_restant);
                 }
                 
-                sessionStatut.value = response.data.statut;
-                if (sessionStatut.value === 'temps_epuise') {
-                    handleTimeUp();
+                if (response.data.statut === 'temps_epuise') {
+                    showTimeUpModal.value = true;
+                    gameStore.stopTimer();
                 }
             } catch (error) {
                 console.error("Heartbeat error", error);
@@ -141,13 +85,9 @@ const startHeartbeat = () => {
     }, 30000);
 };
 
-const showTimeUpModal = ref(false);
-const handleTimeUp = () => {
-    showTimeUpModal.value = true;
-};
-
+// ON GARDE : Toutes tes fonctions d'actionnement de l'interface
 const togglePause = () => {
-    const action = sessionStatut.value === 'actif' ? 'pause' : 'reprendre';
+    const action = gameStore.session?.statut === 'actif' ? 'pause' : 'reprendre';
     router.post(route('player.sessions.status', activeSession.value.id), { action }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -169,6 +109,7 @@ const terminerPartie = () => {
     router.post(route('player.sessions.status', activeSession.value.id), { action: 'terminer' }, {
         onSuccess: () => {
             showTimeUpModal.value = false;
+            gameStore.stopTimer(); // On coupe proprement le timer Pinia
             router.visit(route('player.dashboard'));
         }
     });
@@ -182,22 +123,10 @@ const cancelLogout = () => {
     showLogoutModal.value = false;
 };
 
-watch(() => activeSession.value, () => {
-    updateTimerFromSession();
-}, { deep: true });
-
-watch(() => isDashboard.value, () => {
-    // Si on devient sur le dashboard : arrêter immédiatement le timer !
-    if (isDashboard.value) {
-        updateTimerFromSession();
-    }
-});
-
 onMounted(() => {
-    updateTimerFromSession();
     startHeartbeat();
 
-    // Background Sliding Animation
+    // ON GARDE : Ton animation fluide d'arrière-plan avec GSAP
     gsap.to('.bg-slide', {
         xPercent: -20,
         duration: 20,
@@ -208,7 +137,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    stopTimer();
+    gameStore.stopTimer(); // Nettoyage de Pinia à la fermeture du composant
     if (heartbeatInterval) clearInterval(heartbeatInterval);
 });
 </script>
@@ -268,18 +197,21 @@ onUnmounted(() => {
 
                         <!-- Global Timer -->
                         <div v-if="activeSession && !isDashboard" 
-                             :style="isDashboard ? 'display: none !important;' : ''"
-                             class="flex items-center gap-3 px-4 py-1 transition-all duration-300"
-                             :class="tempsRestant < 300 ? 'text-red-500 animate-pulse' : 'text-blue-400'">
-                            <button @click="togglePause" class="hover:scale-110 active:scale-95 transition-transform text-white/80 hover:text-white">
-                                <svg v-if="sessionStatut === 'actif'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-                                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </button>
-                            <div class="flex flex-col items-start leading-none">
-                                <span class="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] opacity-50 text-white">Temps</span>
-                                <span class="font-black text-lg md:text-2xl italic tracking-tighter tabular-nums">{{ formatTemps(tempsRestant) }}</span>
-                            </div>
-                        </div>
+     class="flex items-center gap-3 px-4 py-1 transition-all duration-300"
+     :class="gameStore.tempsRestant < 300 ? 'text-red-500 animate-pulse' : 'text-blue-400'">
+    
+    <button @click="togglePause" class="hover:scale-110 active:scale-95 transition-transform text-white/80 hover:text-white">
+        <!-- Utilisation du statut de session de Pinia -->
+        <svg v-if="gameStore.session?.statut === 'actif'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    
+    <div class="flex flex-col items-start leading-none">
+        <span class="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] opacity-50 text-white">Temps</span>
+        <!-- Utilisation directe du Getter de formatage de Pinia (sans paramètres !) -->
+        <span class="font-black text-lg md:text-2xl italic tracking-tighter tabular-nums">{{ gameStore.formatTemps }}</span>
+    </div>
+</div>
                     </div>
                 </div>
             </div>
