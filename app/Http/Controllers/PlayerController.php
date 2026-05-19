@@ -387,12 +387,74 @@ class PlayerController extends Controller
 
     public function changerLieu(Request $request, SessionJeu $session)
     {
-        $request->validate([
-            'lieu_id' => 'required|exists:lieux,id',
-        ]);
+        $user = auth()->user();
+        $equipe = $user->equipe;
 
-        // Trouver la première énigme non bonus de ce nouveau lieu
-        $nouvelleEnigme = Enigme::where('lieu_id', $request->lieu_id)
+        // Déterminer les lieux déjà complétés
+        $lieuxDejaCompletes = collect();
+        if ($equipe) {
+            $lieuxDejaCompletes = Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($equipe) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($equipe) {
+                          $q2->whereHas('user', function ($q3) use ($equipe) {
+                              $q3->where('equipe_id', $equipe->id);
+                          })->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        } else {
+            $lieuxDejaCompletes = Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($user) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($user) {
+                          $q2->where('user_id', $user->id)->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        }
+
+        // Trouver le lieu actuel
+        $currentEnigme = Enigme::find($session->current_enigme_id);
+        $currentLieu = $currentEnigme ? $currentEnigme->lieu : null;
+
+        // Trouver tous les autres lieux non complétés
+        $autresLieux = Lieu::where('ville_id', $session->ville_id)
+            ->whereNotIn('id', $lieuxDejaCompletes);
+
+        if ($currentLieu) {
+            $autresLieux = $autresLieux->where('id', '!=', $currentLieu->id);
+        }
+
+        $autresLieux = $autresLieux->get();
+
+        if ($autresLieux->isEmpty()) {
+            return redirect()->route('player.game.jeu', ['session' => $session->id])
+                ->with('error', 'Aucun autre lieu disponible.');
+        }
+
+        // Trouver le lieu le plus proche du lieu actuel (si on a des coordonnées valides)
+        $lieuCible = null;
+        if ($currentLieu && $currentLieu->latitude && $currentLieu->longitude) {
+            $minDistance = null;
+            foreach ($autresLieux as $l) {
+                if ($l->latitude && $l->longitude) {
+                    $dist = $this->calculerDistance($currentLieu->latitude, $currentLieu->longitude, $l->latitude, $l->longitude);
+                    if ($minDistance === null || $dist < $minDistance) {
+                        $minDistance = $dist;
+                        $lieuCible = $l;
+                    }
+                }
+            }
+        }
+
+        // Si aucun lieu cible n'est trouvé via coordonnées, on prend le premier
+        if (!$lieuCible) {
+            $lieuCible = $autresLieux->first();
+        }
+
+        // Trouver la première énigme non bonus de ce nouveau lieu cible
+        $nouvelleEnigme = Enigme::where('lieu_id', $lieuCible->id)
             ->where('is_bonus', false)
             ->orderBy('ordre')
             ->first();
@@ -405,7 +467,7 @@ class PlayerController extends Controller
 
         return redirect()->route('player.lieu.dashboard', [
             'ville' => $session->ville_id,
-            'lieu' => $request->lieu_id
+            'lieu' => $lieuCible->id
         ]);
     }
 
@@ -688,5 +750,15 @@ class PlayerController extends Controller
         return Inertia::render('Player/HistoriqueCulturel', [
             'lieux_completes' => $lieuxCompletes,
         ]);
+    }
+
+    private function calculerDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000; // en mètres
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat/2) * sin($dLat/2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon/2) * sin($dLon/2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        return $earthRadius * $c;
     }
 }

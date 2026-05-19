@@ -1,6 +1,6 @@
 <script setup>
 import PlayerLayout from '@/Layouts/PlayerLayout.vue';
-import { onMounted, onUnmounted, ref, computed,watch } from 'vue';
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import gsap from 'gsap';
@@ -38,16 +38,13 @@ const localUnlockedIndices = ref(props.indices_debloques);
 const unlockedIndicesContent = ref({});
 const localProgression = ref(props.progression);
 const bonusEnigmes = ref([]);
-const showChangerLieuModal = ref(false);
+const showChangerLieuModal = ref(false); // Gardé pour compatibilité si nécessaire
 
-const changerLieu = (lieuId) => {
+const changerLieu = () => {
     loading.value = true;
-    router.post(route('player.game.changer-lieu', { session: props.session.id }), {
-        lieu_id: lieuId
-    }, {
+    router.post(route('player.game.changer-lieu', { session: props.session.id }), {}, {
         onFinish: () => {
             loading.value = false;
-            showChangerLieuModal.value = false;
         }
     });
 };
@@ -77,7 +74,7 @@ const isTextValidated = computed(() => !!localProgression.value?.text_validated_
 const isGpsValidated = computed(() => !!localProgression.value?.gps_validated_at);
 const showBonusChoice = ref(false);
 
-// Gestion du Temps (Déléguée au PlayerLayout, on ne garde que les refs réactives si besoin)
+// Gestion du Temps (Déléguée au PlayerLayout)
 const tempsRestant = computed(() => props.session.temps_restant);
 const sessionStatut = computed(() => props.session.statut);
 
@@ -153,8 +150,8 @@ const initGameMap = () => {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
         }, (err) => console.error("Erreur GPS:", err), {
             enableHighAccuracy: true,
-            maximumAge: 10000, // Maximum 10 secondes de cache
-            timeout: 30000, // Timeout après 30 secondes
+            maximumAge: 10000,
+            timeout: 30000,
         });
     }
 
@@ -210,8 +207,6 @@ const faireChoixBonus = (wantsBonus) => {
         onSuccess: () => {
             loading.value = false;
             modalState.value.show = false;
-            // Si c'est un bonus, l'enigme change, les watchers feront le reste
-            // Si c'est "Lieu suivant", on sera redirigé ou l'enigme sera null
         },
         onError: () => {
             loading.value = false;
@@ -240,7 +235,6 @@ onMounted(() => {
         }
     });
 
-    // Si la session est en attente, commencer la session !
     if (props.session.statut === 'en_attente') {
         axios.post(route('player.game.start', { session: props.session.id }))
             .then(() => {
@@ -275,7 +269,6 @@ const validerGPS = () => {
                 loading.value = false;
                 if (response.data.success) {
                     localScore.value += response.data.score_gagne;
-                    // Mettre à jour la progression locale pour changer l'UI immédiatement
                     localProgression.value = { ...localProgression.value, gps_validated_at: new Date() };
 
                     if (response.data.show_choice) {
@@ -353,61 +346,85 @@ const isIndiceUnlocked = (indiceId) => {
 </script>
 
 <template>
-    <PlayerLayout :title="enigme ? enigme.titre : 'En jeu'">
+    <PlayerLayout :title="enigme ? (isTextValidated ? enigme.titre : 'Énigme Mystère') : 'En jeu'">
 
         <div v-if="enigme" class="max-w-4xl mx-auto pt-32 pb-10 px-4 md:px-0">
-            <div class="game-card bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 overflow-hidden relative">
-                <!-- Image de l'énigme -->
+            <!-- Cadre de Jeu Parchemin RPG Royal -->
+            <div class="game-card parchment-scroll-violet overflow-hidden relative">
+                
+                <!-- Image de l'énigme / Sceau Cire Mystère Doré -->
                 <div class="h-64 md:h-96 relative overflow-hidden">
-                    <div v-if="!isTextValidated && !enigme.is_bonus" class="absolute inset-0 bg-slate-200 flex items-center justify-center">
-                        <span class="text-9xl font-black text-slate-300">?</span>
+                    <!-- Sceau de cire mystère si non validé textuellement -->
+                    <div v-if="!isTextValidated && !enigme.is_bonus" 
+                         class="absolute inset-0 bg-gradient-to-b from-purple-950 to-purple-900 flex flex-col items-center justify-center border-b-4 border-yellow-500 shadow-inner">
+                        <!-- Emblème Cire & Dorures -->
+                        <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-yellow-400 to-yellow-600 border-4 border-yellow-200 flex items-center justify-center shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-pulse">
+                            <span class="text-7xl font-black text-purple-950 select-none">?</span>
+                        </div>
+                        <span class="text-yellow-400 text-xs font-black uppercase tracking-[0.3em] mt-4 drop-shadow">LIEU À RECONNAÎTRE</span>
                     </div>
+                    
                     <img v-else :src="enigme.image || 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800'"
-                         class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent"></div>
-
+                         class="w-full h-full object-cover border-b-4 border-yellow-500 shadow-lg">
+                         
                     <div class="absolute top-6 left-6 flex flex-col gap-3">
-                        <span v-if="enigme.is_bonus" class="px-6 py-3 bg-gradient-to-b from-purple-500 to-purple-700 text-white text-xs font-black uppercase rounded-xl tracking-widest shadow-xl border border-purple-300">
+                        <span v-if="enigme.is_bonus" class="px-5 py-2.5 bg-gradient-to-b from-purple-600 to-purple-800 text-white text-xs font-black uppercase rounded-lg tracking-widest shadow-xl border border-purple-400">
                              MODE BONUS
                         </span>
-                        <span v-else class="px-6 py-3 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white text-xs font-black uppercase rounded-xl tracking-widest shadow-xl border border-yellow-200">
+                        <span v-else class="px-5 py-2.5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white text-xs font-black uppercase rounded-lg tracking-widest shadow-xl border border-yellow-300">
                              Niveau {{ enigme.niveau }}
                         </span>
                     </div>
                 </div>
 
-                <div class="p-8 md:p-12 -mt-16 md:-mt-24 relative z-10">
-                    <h2 v-if="!isTextValidated && !enigme.is_bonus" class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-slate-300 drop-shadow-sm mb-6">??? ??? ???</h2>
-                    <h2 v-else class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-slate-800 drop-shadow-sm mb-6">{{ enigme.titre }}</h2>
+                <!-- Section de Contenu -->
+                <div class="p-8 md:p-12 relative z-10 space-y-8">
+                    <!-- Titre Secret ou Révélé -->
+                    <div class="text-center">
+                        <h2 v-if="!isTextValidated && !enigme.is_bonus" 
+                            class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-purple-950 drop-shadow-sm leading-none">
+                            ??? ??? ???
+                        </h2>
+                        <h2 v-else 
+                            class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-purple-950 drop-shadow-sm leading-none">
+                            {{ enigme.titre }}
+                        </h2>
+                        <div class="w-24 h-1 bg-yellow-500 mx-auto mt-4 rounded-full"></div>
+                    </div>
 
-                    <div class="prose prose-slate max-w-none mb-10">
-                        <p class="text-lg md:text-2xl font-bold text-slate-700 leading-relaxed italic bg-white/50 p-6 rounded-2xl border border-white shadow-inner">
-                            "{{ enigme.contenu }}"
+                    <!-- Grimoire text / Énoncé de l'Énigme -->
+                    <div class="prose prose-slate max-w-none">
+                        <p class="text-lg md:text-2xl font-bold text-slate-800 leading-relaxed italic bg-yellow-50/50 p-6 rounded-2xl border border-yellow-200/80 shadow-inner text-center">
+                            " {{ enigme.contenu }} "
                         </p>
                     </div>
 
-                    <!-- Actions -->
+                    <!-- Actions Principales (Étapes de validation) -->
                     <div class="space-y-6">
-                        <!-- Changer de lieu (Si d'autres lieux sont disponibles et non validés) -->
+                        
+                        <!-- Changer de lieu (Passer) -->
                         <div v-if="autres_lieux && autres_lieux.length > 0 && !isGpsValidated" class="flex justify-end pr-2">
-                            <button @click="showChangerLieuModal = true" class="text-purple-600 hover:text-purple-700 font-black uppercase text-sm tracking-widest flex items-center gap-2 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <button @click="changerLieu" class="text-purple-700 hover:text-purple-900 font-black uppercase text-sm tracking-widest flex items-center gap-2 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                 </svg>
-                                Passer à un autre lieu
+                                Passer au lieu suivant
                             </button>
                         </div>
 
                         <!-- Réponse textuelle (Étape 1) -->
-                        <div v-if="!isTextValidated" class="bg-gradient-to-b from-yellow-50 to-white p-6 md:p-8 rounded-2xl border border-yellow-200 shadow-md">
-                            <h3 class="text-xl font-black italic uppercase text-yellow-600 mb-2">Résoudre le mystère</h3>
-                            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">Saisissez le mot clé pour révéler le lieu</p>
+                        <div v-if="!isTextValidated" 
+                             class="p-6 md:p-8 rounded-2xl border-2 border-yellow-300 bg-gradient-to-b from-yellow-50/40 to-yellow-100/30 shadow-inner space-y-4">
+                            <div class="text-center">
+                                <h3 class="text-xl font-black italic uppercase text-purple-900">RÉSOUDRE LE MYSTÈRE</h3>
+                                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Saisissez le mot-clé pour révéler l'identité du lieu</p>
+                            </div>
 
-                            <div class="relative">
+                            <div class="relative max-w-xl mx-auto">
                                 <input v-model="reponseTextuelle" type="text" placeholder="VOTRE RÉPONSE ICI..."
-                                       class="w-full bg-white border-2 border-yellow-100 rounded-xl py-5 px-8 text-sm md:text-base font-bold tracking-widest text-slate-700 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 transition-all placeholder:text-slate-300 shadow-inner">
+                                       class="w-full bg-yellow-50/70 border-2 border-yellow-400/50 rounded-xl py-5 px-8 text-sm md:text-base font-bold tracking-widest text-purple-950 focus:ring-4 focus:ring-purple-400/30 focus:border-purple-600 transition-all placeholder:text-purple-950/20 shadow-inner">
                                 <button @click="soumettreReponse" :disabled="loading"
-                                        class="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg border border-yellow-300">
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rpg-btn-yellow text-white rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg">
                                     <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                                 </button>
@@ -415,62 +432,66 @@ const isIndiceUnlocked = (indiceId) => {
                         </div>
 
                         <!-- Validation GPS (Étape 2) -->
-                        <div v-if="isTextValidated && !isGpsValidated" class="bg-gradient-to-b from-[#F0F7FF] to-white p-6 md:p-8 rounded-2xl border border-blue-100 shadow-md">
-                            <h3 class="text-xl font-black italic uppercase text-[#7C3AED] mb-2">Se rendre sur place</h3>
-                            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">Utilisez votre GPS pour gagner le reste des points !</p>
+                        <div v-if="isTextValidated && !isGpsValidated" 
+                             class="p-6 md:p-8 rounded-2xl border-2 border-purple-300/60 bg-gradient-to-b from-purple-50/20 to-purple-100/20 shadow-inner space-y-6">
+                            <div class="text-center">
+                                <h3 class="text-xl font-black italic uppercase text-purple-950">SE RENDRE SUR PLACE</h3>
+                                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Gagnez la position pour débloquer les points GPS !</p>
+                            </div>
 
                             <!-- Carte de guidage -->
-                            <div class="h-64 md:h-80 w-full bg-slate-100 rounded-xl mb-8 overflow-hidden border-4 border-white shadow-inner relative">
+                            <div class="h-64 md:h-80 w-full bg-slate-100 rounded-xl overflow-hidden border-4 border-yellow-500 shadow-lg relative z-0">
                                 <div ref="mapContainer" class="w-full h-full z-0"></div>
-                                <div class="absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase text-[#7C3AED] shadow-sm">
-                                    Rayon: {{ enigme.rayon || 50 }}m
+                                <div class="absolute bottom-4 left-4 z-10 bg-purple-950 text-yellow-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase shadow-md border border-yellow-500/50">
+                                    Rayon de validation: {{ enigme.rayon || 50 }}m
                                 </div>
                             </div>
 
                             <button @click="validerGPS" :disabled="loading"
-                                    class="w-full py-5 bg-gradient-to-b from-[#7C3AED] to-purple-800 border-t border-purple-400 text-white rounded-xl font-black text-xl md:text-2xl uppercase tracking-widest shadow-[0_10px_20px_-10px_rgba(124,58,237,0.8)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-4">
+                                    class="w-full py-5 rpg-btn-violet text-white rounded-xl font-black text-xl md:text-2xl uppercase tracking-widest flex items-center justify-center space-x-4">
                                 <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 <div v-else class="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span>{{ loading ? 'Vérification...' : 'Je suis arrivé !' }}</span>
+                                <span>{{ loading ? 'Vérification en cours...' : 'Valider ma position !' }}</span>
                             </button>
                         </div>
 
-                        <!-- Choix Bonus (Étape 3) -->
-                        <div v-if="isGpsValidated" class="text-center py-10">
-                            <h3 class="text-3xl font-black italic uppercase text-[#7C3AED] mb-8">Bravo ! Vous avez terminé ce lieu.</h3>
-                            <div class="flex flex-col sm:flex-row gap-6 justify-center">
-                                <button @click="faireChoixBonus(false)" class="px-10 py-5 bg-slate-800 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl">
+                        <!-- Énigme résolue / Choix Bonus (Étape 3) -->
+                        <div v-if="isGpsValidated" class="text-center py-8 space-y-6">
+                            <h3 class="text-3xl font-black italic uppercase text-purple-950">Félicitations aventurier !</h3>
+                            <p class="text-slate-600 font-bold uppercase text-xs tracking-widest">Vous avez triomphé des secrets de ce lieu mystique.</p>
+                            
+                            <div class="flex flex-col sm:flex-row gap-6 justify-center pt-4">
+                                <button @click="faireChoixBonus(false)" class="px-10 py-5 rpg-btn-violet text-white rounded-xl font-black uppercase tracking-widest shadow-xl">
                                     Lieu suivant
                                 </button>
-                                <button @click="faireChoixBonus(true)" class="px-10 py-5 bg-yellow-400 text-white rounded-xl font-black uppercase tracking-widest hover:bg-yellow-500 transition-all shadow-xl">
+                                <button @click="faireChoixBonus(true)" class="px-10 py-5 rpg-btn-yellow text-white rounded-xl font-black uppercase tracking-widest shadow-xl">
                                     En savoir plus (Bonus)
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Indices -->
-                        <div v-if="enigme.indices && enigme.indices.length > 0" class="mt-8 pt-8 border-t border-slate-200">
-                            <h3 class="text-xl font-black italic uppercase text-slate-800 mb-6 flex items-center gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#7C3AED]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Besoin d'aide ?
+                        <!-- Section Indices (Uniquement visible AVANT que le lieu soit deviné) -->
+                        <div v-if="!isTextValidated && enigme.indices && enigme.indices.length > 0" class="mt-8 pt-8 border-t-2 border-purple-200/50">
+                            <h3 class="text-xl font-black italic uppercase text-purple-950 mb-6 flex items-center justify-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                BESOIN D'UNE PAROLE SAGE ?
                             </h3>
-                            <div class="space-y-4">
+                            <div class="space-y-4 max-w-2xl mx-auto">
                                 <div v-for="(indice, index) in enigme.indices" :key="indice.id" class="relative">
                                     <!-- Indice Débloqué -->
-                                    <div v-if="isIndiceUnlocked(indice.id)" class="p-6 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
-                                        <p class="text-[#7C3AED] text-xs font-black uppercase tracking-widest mb-2">Indice {{ index + 1 }}</p>
-                                        <p class="text-slate-700 italic font-bold text-lg">{{ unlockedIndicesContent[indice.id] || indice.contenu }}</p>
+                                    <div v-if="isIndiceUnlocked(indice.id)" class="p-6 bg-yellow-50/50 rounded-xl border-2 border-yellow-300 shadow-inner">
+                                        <p class="text-purple-900 text-xs font-black uppercase tracking-widest mb-2">Message révélé — Indice {{ index + 1 }}</p>
+                                        <p class="text-slate-800 italic font-bold text-lg">" {{ unlockedIndicesContent[indice.id] || indice.contenu }} "</p>
                                     </div>
                                     <!-- Indice Bloqué -->
-                                    <div v-else class="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div v-else class="p-6 bg-purple-950/10 rounded-xl border-2 border-dashed border-purple-300 flex flex-col md:flex-row items-center justify-between gap-4">
                                         <div>
-                                            <p class="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">Indice {{ index + 1 }}</p>
-                                            <p class="text-slate-400 font-bold text-sm">Contenu verrouillé</p>
+                                            <p class="text-purple-800 text-xs font-black uppercase tracking-widest mb-1">Indice {{ index + 1 }}</p>
+                                            <p class="text-slate-500 font-bold text-sm">Contenu verrouillé dans les cryptes</p>
                                         </div>
                                         <button @click="debloquerIndice(indice)"
-                                                class="shrink-0 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2"
-                                                :class="(localUnlockedIndices.length === 0) ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' : 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200'">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                class="shrink-0 px-6 py-4 rpg-btn-yellow text-white rounded-xl font-black uppercase tracking-widest flex items-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                             {{ localUnlockedIndices.length === 0 ? 'Gratuit' : `- ${indice.penalite} XP` }}
                                         </button>
                                     </div>
@@ -483,12 +504,13 @@ const isIndiceUnlocked = (indiceId) => {
             </div>
         </div>
 
+        <!-- Aucun défi actif -->
         <div v-else class="flex flex-col items-center justify-center h-full pt-20 px-6">
-            <div class="bg-black/50 backdrop-blur-md p-10 rounded-2xl border-2 border-white/10 text-center max-w-lg w-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-yellow-400 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white mb-4">Aucune quête active</h2>
-                <p class="text-slate-300 text-sm md:text-base font-bold uppercase tracking-widest mb-8">Retournez au menu pour lancer une session</p>
-                <Link :href="route('player.dashboard')" class="inline-block py-4 px-8 bg-gradient-to-b from-yellow-400 to-yellow-600 text-slate-900 rounded-xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+            <div class="parchment-scroll-violet p-10 text-center max-w-lg w-full relative z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-yellow-500 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-purple-950 mb-4">Aucune quête active</h2>
+                <p class="text-slate-600 text-sm md:text-base font-bold uppercase tracking-widest mb-8">Retournez au grimoire principal pour lancer une session</p>
+                <Link :href="route('player.dashboard')" class="inline-block py-4 px-8 rpg-btn-yellow text-white rounded-xl font-black uppercase tracking-widest shadow-xl">
                     Menu Principal
                 </Link>
             </div>
@@ -496,10 +518,7 @@ const isIndiceUnlocked = (indiceId) => {
 
         <!-- MODAL GLOBAL DE JEU -->
         <div v-if="modalState.show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <!-- Overlay sombre -->
             <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="closeModal"></div>
-
-            <!-- Contenu Modal -->
             <div class="game-modal-content relative w-full max-w-lg rounded-2xl p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
                  :class="{
                      'bg-gradient-to-br from-green-400 to-green-600 border-green-300': modalState.type === 'success',
@@ -507,11 +526,9 @@ const isIndiceUnlocked = (indiceId) => {
                      'bg-gradient-to-br from-blue-400 to-blue-600 border-blue-300': modalState.type === 'info'
                  }">
                 <div class="bg-white rounded-xl p-8 md:p-10 text-center relative overflow-hidden">
-                    <!-- Décoration fond -->
                     <div class="absolute -right-10 -top-10 w-40 h-40 opacity-10 rounded-full"
-                         :class="{'bg-green-500': modalState.type === 'success', 'bg-red-500': modalState.type === 'error', 'bg-blue-500': modalState.type === 'info'}"></div>
+                          :class="{'bg-green-500': modalState.type === 'success', 'bg-red-500': modalState.type === 'error', 'bg-blue-500': modalState.type === 'info'}"></div>
 
-                    <!-- Icône -->
                     <div class="w-24 h-24 mx-auto rounded-xl flex items-center justify-center mb-6 shadow-xl relative z-10"
                          :class="{
                              'bg-green-100 text-green-500 rotate-3': modalState.type === 'success',
@@ -555,42 +572,82 @@ const isIndiceUnlocked = (indiceId) => {
             </div>
         </div>
 
-        <!-- Modal Changer de Lieu -->
-        <div v-if="showChangerLieuModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showChangerLieuModal = false"></div>
-            <div class="bg-white rounded-2xl p-8 max-w-md w-full relative z-10 shadow-2xl border-4 border-purple-500/20">
-                <div class="text-center mb-6">
-                    <div class="w-20 h-20 bg-purple-100 text-[#7C3AED] rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                    </div>
-                    <h3 class="text-3xl font-black italic uppercase text-slate-800 tracking-tighter">Changer de lieu</h3>
-                    <p class="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-1">Vous pouvez suspendre ce lieu pour en explorer un autre</p>
-                </div>
-
-                <div class="space-y-3 mb-6 max-h-60 overflow-y-auto pr-1">
-                    <button v-for="lieu in autres_lieux" :key="lieu.id" @click="changerLieu(lieu.id)" :disabled="loading"
-                            class="w-full flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-100 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all text-left group">
-                        <div>
-                            <span class="block text-lg font-black uppercase text-slate-800 italic group-hover:text-purple-700 transition-colors">{{ lieu.nom }}</span>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ lieu.adresse }}</span>
-                        </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-hover:text-purple-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                </div>
-
-                <button @click="showChangerLieuModal = false" class="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all text-xs">
-                    Fermer
-                </button>
-            </div>
-        </div>
-
     </PlayerLayout>
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
+
 h2, h3, button, span {
     font-family: 'Bangers', cursive;
+}
+
+/* Parchment Scroll effect */
+.parchment-scroll-violet {
+    background: linear-gradient(135deg, #fffbf2 0%, #f7ebd3 100%);
+    border: 6px double #7c3aed; /* Violet */
+    outline: 3px solid #fbbf24; /* Or */
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.5), 
+        inset 0 0 80px rgba(139, 94, 26, 0.25),
+        0 0 25px rgba(124, 58, 237, 0.25); /* Violet glow */
+    border-radius: 12px;
+    position: relative;
+}
+
+/* Golden Rivets at the corners */
+.parchment-scroll-violet::before, .parchment-scroll-violet::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: radial-gradient(circle, #fef08a 0%, #ca8a04 100%);
+    border: 2px solid #78350f;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+.parchment-scroll-violet::before { top: 12px; left: 12px; }
+.parchment-scroll-violet::after { top: 12px; right: 12px; }
+
+/* 3D RPG Violet & Or Buttons */
+.rpg-btn-violet {
+    background: linear-gradient(to bottom, #a855f7 0%, #7c3aed 100%);
+    border-top: 3px solid #f3e8ff;
+    border-bottom: 6px solid #4c1d95;
+    border-left: 3px solid #6b21a8;
+    border-right: 3px solid #6b21a8;
+    text-shadow: 2px 2px 0px #4c1d95;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+    transition: all 0.1s ease;
+}
+.rpg-btn-violet:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+.rpg-btn-violet:active {
+    border-bottom-width: 2px;
+    transform: translateY(4px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+.rpg-btn-yellow {
+    background: linear-gradient(to bottom, #fbbf24 0%, #d97706 100%);
+    border-top: 3px solid #fef3c7;
+    border-bottom: 6px solid #78350f;
+    border-left: 3px solid #b45309;
+    border-right: 3px solid #b45309;
+    text-shadow: 2px 2px 0px #78350f;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+    transition: all 0.1s ease;
+}
+.rpg-btn-yellow:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+.rpg-btn-yellow:active {
+    border-bottom-width: 2px;
+    transform: translateY(4px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
 }
 </style>

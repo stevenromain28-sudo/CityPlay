@@ -62,126 +62,256 @@ const jouerEnigme = (enigme) => {
 };
 
 onMounted(() => {
-    gsap.from('.lieu-header', { y: -30, opacity: 0, duration: 0.8 });
-    gsap.from('.stat-card', { scale: 0.9, opacity: 0, stagger: 0.2, duration: 0.6, delay: 0.3 });
+    gsap.from('.rpg-medallion', { scale: 0.8, opacity: 0, stagger: 0.15, duration: 0.6, ease: 'back.out(1.5)' });
+    gsap.from('.parchment-scroll-violet', { y: 30, opacity: 0, duration: 0.8, delay: 0.3, ease: 'power2.out' });
 });
 </script>
 
 <template>
-    <PlayerLayout :title="lieu.nom">
-        <div class="space-y-12">
-            <!-- Header du Lieu -->
-            <div class="lieu-header relative h-96 rounded-[3rem] overflow-hidden shadow-2xl">
-                <img :src="lieu.image_principale || 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800'" 
-                     class="w-full h-full object-cover" :class="{ 'opacity-50': deja_complete }">
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-                
-                <div class="absolute bottom-12 left-12 right-12">
-                    <span v-if="deja_complete" class="px-6 py-3 bg-green-500 text-white text-xs font-black uppercase rounded-2xl tracking-widest shadow-xl mb-6 inline-block animate-pulse">
-                        ✓ DÉJÀ COMPLÉTÉ
-                    </span>
-                    <span v-else class="px-6 py-3 bg-yellow-400 text-white text-xs font-black uppercase rounded-2xl tracking-widest shadow-xl mb-6 inline-block">
-                        DÉCOUVRIR LE LIEU
-                    </span>
-                    <h2 class="text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-white leading-none">{{ lieu.nom }}</h2>
-                </div>
-            </div>
-
-            <div class="flex justify-center -mt-20 relative z-20">
-                <button v-if="deja_complete" 
-                        class="px-12 py-6 bg-gradient-to-b from-green-500 to-green-700 text-white rounded-[2.5rem] font-black text-2xl uppercase tracking-widest shadow-[0_20px_40px_-10px_rgba(34,197,94,0.5)] flex items-center gap-4"
-                        disabled>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-                    Lieu déjà visité
-                </button>
-                <button v-else-if="mainEnigmes.length > 0" 
-                        @click="mainEnigmes.length === 1 ? jouerEnigme(mainEnigmes[0]) : scrollToChallenges()"
-                        class="px-12 py-6 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-[2.5rem] font-black text-2xl uppercase tracking-widest shadow-[0_20px_40px_-10px_rgba(234,179,8,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {{ mainEnigmes.length === 1 ? 'Commencer l\'Aventure' : 'Choisir un Défi ci-dessous' }}
-                </button>
-            </div>
-
-            <!-- Stats & Infos -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-                <div class="stat-card bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-50" :class="{ 'opacity-60': deja_complete }">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Difficulté</h4>
+    <PlayerLayout :title="deja_complete ? lieu.nom : 'Lieu Mystère'">
+        <div class="space-y-8 max-w-5xl mx-auto pt-32 pb-16 px-4 md:px-0">
+            
+            <!-- RPG Medallions / Stats Grid (Maintenant au sommet de la vue) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Difficulté Medallion -->
+                <div class="rpg-medallion p-6 flex flex-col items-center text-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -bottom-6 w-16 h-16 bg-purple-500/10 rounded-full"></div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.25em] text-purple-400 mb-3">DIFFICULTÉ DU LIEU</span>
                     <div class="flex space-x-2">
                         <div v-for="i in 3" :key="i" 
-                             class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xl"
-                             :class="i <= lieu.difficulte ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-300'">
+                             class="w-10 h-10 rounded-lg flex items-center justify-center font-black text-xl shadow-md transition-all duration-300 border-2"
+                             :class="i <= lieu.difficulte 
+                                ? 'bg-gradient-to-b from-purple-400 to-purple-600 border-yellow-400 text-white scale-110 shadow-purple-500/30' 
+                                : 'bg-slate-800/80 border-slate-700 text-slate-500'">
                             {{ i }}
                         </div>
                     </div>
                 </div>
 
-                <div class="stat-card bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-50" :class="{ 'opacity-60': deja_complete }">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Énigmes</h4>
-                    <p class="text-4xl font-black italic text-[#7C3AED]">{{ lieu.enigmes_count }} DÉFIS</p>
+                <!-- Énigmes Medallion -->
+                <div class="rpg-medallion p-6 flex flex-col items-center text-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -bottom-6 w-16 h-16 bg-purple-500/10 rounded-full"></div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.25em] text-purple-400 mb-2">NOMBRE DE DÉFIS</span>
+                    <p class="text-3xl font-black italic text-yellow-400 tracking-tighter uppercase mt-1">
+                        {{ lieu.enigmes_count }} Énigme{{ lieu.enigmes_count > 1 ? 's' : '' }}
+                    </p>
                 </div>
 
-                <div class="stat-card bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-50" :class="{ 'opacity-60': deja_complete }">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Temps Estimé</h4>
-                    <p class="text-4xl font-black italic text-yellow-400">{{ lieu.duree_estimee }} MIN</p>
+                <!-- Temps Estimé Medallion -->
+                <div class="rpg-medallion p-6 flex flex-col items-center text-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -bottom-6 w-16 h-16 bg-purple-500/10 rounded-full"></div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.25em] text-purple-400 mb-2">DURÉE ESTIMÉE</span>
+                    <p class="text-3xl font-black italic text-purple-400 tracking-tighter uppercase mt-1">
+                        {{ lieu.duree_estimee }} Minutes
+                    </p>
                 </div>
             </div>
 
-            <!-- Description -->
-            <div class="bg-white p-12 rounded-[3rem] shadow-xl border border-blue-50">
-                <h3 class="text-3xl font-black italic uppercase text-slate-800 mb-6">À propos de <span class="text-[#7C3AED]">ce lieu</span></h3>
-                <p class="text-slate-600 text-lg font-bold leading-relaxed italic mb-10">
-                    {{ lieu.description }}
-                </p>
+            <!-- Grand Parchemin Ancien -->
+            <div class="parchment-scroll-violet p-8 md:p-12">
+                <div class="relative z-10 space-y-8">
+                    <!-- Title with gold ribbons -->
+                    <div class="text-center relative">
+                        <span v-if="deja_complete" class="px-4 py-1.5 bg-green-500 text-white text-[9px] font-black uppercase rounded border border-green-400 shadow-md inline-block mb-3 animate-pulse">
+                            ✓ LIEU DÉJÀ COMPLÉTÉ
+                        </span>
+                        <span v-else class="px-4 py-1.5 bg-yellow-400 text-white text-[9px] font-black uppercase rounded border border-yellow-300 shadow-md inline-block mb-3">
+                            QUÊTE INCONNUE
+                        </span>
+                        
+                        <h3 class="text-3xl md:text-5xl font-black italic uppercase text-purple-950 tracking-tight leading-none">
+                            {{ deja_complete ? lieu.nom : 'LIEU MYSTÈRE' }}
+                        </h3>
+                        <div class="w-32 h-1 bg-yellow-500 mx-auto mt-4 rounded-full"></div>
+                    </div>
+                    
+                    <p class="text-slate-800 text-lg md:text-xl font-bold leading-relaxed italic text-center px-4">
+                        " {{ lieu.description }} "
+                    </p>
 
-                <!-- Liste des Énigmes -->
-                <div id="challenges-section" class="space-y-6 scroll-mt-32" v-if="!deja_complete">
-                    <h4 class="text-xl font-black italic uppercase text-slate-400 tracking-widest">Choisissez votre défi</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div v-for="enigme in mainEnigmes" :key="enigme.id" 
-                             @click="jouerEnigme(enigme)"
-                             class="enigme-card group bg-white p-8 rounded-[2rem] border-4 border-[#7C3AED]/20 hover:border-[#7C3AED] transition-all cursor-pointer relative overflow-hidden shadow-xl min-h-[250px] flex flex-col justify-between">
-    
-    <div class="absolute top-0 right-0 w-24 h-24 bg-[#7C3AED]/10 rounded-bl-[3rem] -mr-8 -mt-8"></div>
-    
-    <div class="relative z-10">
-        <div class="flex justify-between items-start mb-6">
-            <span class="px-5 py-2 bg-yellow-400 text-white text-xs font-black uppercase rounded-xl tracking-widest shadow-lg">
-                NIVEAU {{ enigme.niveau }}
-            </span>
-            <div class="w-12 h-12 bg-[#7C3AED] text-white rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg>
-            </div>
-        </div>
-        
-        <h5 class="text-3xl font-black italic uppercase text-slate-800 mb-3 leading-tight group-hover:text-[#7C3AED] transition-colors">
-            {{ enigme.titre }}
-        </h5>
-        <p class="text-slate-600 text-base font-bold leading-relaxed line-clamp-3 italic">
-            "{{ enigme.contenu }}"
-        </p>
-    </div>
+                    <!-- Liste des Énigmes / Avis de Recherche -->
+                    <div id="challenges-section" class="scroll-mt-32 pt-4" v-if="!deja_complete">
+                        <h4 class="text-center text-xs font-black italic uppercase text-slate-400 tracking-[0.3em] mb-8">
+                            — DÉFIS DISPONIBLES —
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div v-for="enigme in mainEnigmes" :key="enigme.id" 
+                                 @click="jouerEnigme(enigme)"
+                                 class="enigma-scroll-card p-6 md:p-8 flex flex-col justify-between min-h-[260px] group">
+                                
+                                <!-- Decorative star seal -->
+                                <div class="absolute top-2 right-2 w-10 h-10 border-2 border-yellow-500/30 rounded-full flex items-center justify-center text-yellow-600/30 text-xs font-black select-none pointer-events-none">
+                                    ★
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-start">
+                                        <span class="px-3 py-1.5 bg-purple-600 text-white text-[9px] font-black uppercase rounded border border-purple-400 shadow-md">
+                                            NIVEAU {{ enigme.niveau }}
+                                        </span>
+                                        <div class="w-8 h-8 rounded-lg bg-yellow-500 text-white flex items-center justify-center shadow-md transform group-hover:scale-110 group-hover:bg-purple-600 transition-all border border-yellow-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="text-2xl font-black italic uppercase text-purple-950 leading-tight group-hover:text-purple-700 transition-colors">
+                                        {{ enigme.titre }}
+                                    </h5>
+                                    
+                                    <p class="text-slate-700 text-sm font-bold leading-relaxed line-clamp-3 italic">
+                                        "{{ enigme.contenu }}"
+                                    </p>
+                                </div>
 
-    <div class="relative z-10 mt-8 pt-6 border-t-2 border-slate-100 flex items-center justify-between">
-        <span class="text-slate-400 font-black text-xs uppercase tracking-widest">
-            Gain potentiel
-        </span>
-        <span class="text-[#7C3AED] font-black text-xl uppercase tracking-tighter italic">
-            +{{ enigme.niveau * 1000 }} XP
-        </span>
-    </div>
-</div>
+                                <div class="pt-4 mt-6 border-t-2 border-slate-200/50 flex items-center justify-between text-xs">
+                                    <span class="text-slate-400 font-black uppercase tracking-wider">
+                                        Gain
+                                    </span>
+                                    <span class="text-purple-700 font-black text-lg italic tracking-tight">
+                                        +{{ enigme.niveau * 1000 }} XP
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Completed display -->
+                    <div id="challenges-section" class="scroll-mt-32 text-center py-10" v-else>
+                        <div class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-300 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <h4 class="text-2xl font-black italic uppercase text-green-700 tracking-wider">
+                            FÉLICITATIONS, TOUS LES DÉFIS ONT ÉTÉ RÉSOLUS !
+                        </h4>
+                    </div>
+
+                    <!-- RPG Button Start (Placé tout au bas du parchemin) -->
+                    <div class="flex justify-center pt-8 border-t-2 border-slate-200/50">
+                        <button v-if="deja_complete" 
+                                class="w-full sm:w-auto px-10 py-5 bg-slate-700/80 text-slate-400 rounded-xl font-black text-xl uppercase tracking-wider border-2 border-slate-600 cursor-not-allowed flex items-center justify-center gap-3"
+                                disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                            Lieu déjà complété
+                        </button>
+                        <button v-else-if="mainEnigmes.length > 0" 
+                                @click="mainEnigmes.length === 1 ? jouerEnigme(mainEnigmes[0]) : scrollToChallenges()"
+                                class="w-full sm:w-auto px-12 py-6 rpg-btn-yellow text-white rounded-xl font-black text-2xl uppercase tracking-widest flex items-center justify-center gap-4 shadow-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            {{ mainEnigmes.length === 1 ? 'Commencer l\'Aventure' : 'Lancer le Défi' }}
+                        </button>
                     </div>
                 </div>
-                <div id="challenges-section" class="space-y-6 scroll-mt-32 text-center p-12" v-else>
-                    <div class="text-green-500 text-6xl mb-4">✓</div>
-                    <h4 class="text-2xl font-black italic uppercase text-slate-500 tracking-widest">Tous les défis de ce lieu ont été complétés !</h4>
-                </div>
             </div>
         </div>
-
     </PlayerLayout>
 </template>
 
 <style scoped>
-h2, h3, h4, h5 { font-family: 'Bangers', cursive; }
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
+
+h2, h3, h4, h5, button, span {
+    font-family: 'Bangers', cursive;
+}
+
+/* Parchment Scroll effect */
+.parchment-scroll-violet {
+    background: linear-gradient(135deg, #fffbf2 0%, #f7ebd3 100%);
+    border: 6px double #7c3aed; /* Violet */
+    outline: 3px solid #fbbf24; /* Or */
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.5), 
+        inset 0 0 80px rgba(139, 94, 26, 0.25),
+        0 0 25px rgba(124, 58, 237, 0.25); /* Violet glow */
+    border-radius: 12px;
+    position: relative;
+}
+
+/* Golden Rivets at the corners */
+.parchment-scroll-violet::before, .parchment-scroll-violet::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: radial-gradient(circle, #fef08a 0%, #ca8a04 100%);
+    border: 2px solid #78350f;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+.parchment-scroll-violet::before { top: 12px; left: 12px; }
+.parchment-scroll-violet::after { top: 12px; right: 12px; }
+
+/* 3D RPG Violet & Or Buttons */
+.rpg-btn-violet {
+    background: linear-gradient(to bottom, #a855f7 0%, #7c3aed 100%);
+    border-top: 3px solid #f3e8ff;
+    border-bottom: 6px solid #4c1d95; /* Deep purple base shadow */
+    border-left: 3px solid #6b21a8;
+    border-right: 3px solid #6b21a8;
+    text-shadow: 2px 2px 0px #4c1d95;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+    transition: all 0.1s ease;
+}
+.rpg-btn-violet:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+.rpg-btn-violet:active {
+    border-bottom-width: 2px;
+    transform: translateY(4px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+.rpg-btn-yellow {
+    background: linear-gradient(to bottom, #fbbf24 0%, #d97706 100%);
+    border-top: 3px solid #fef3c7;
+    border-bottom: 6px solid #78350f; /* Deep gold/amber base shadow */
+    border-left: 3px solid #b45309;
+    border-right: 3px solid #b45309;
+    text-shadow: 2px 2px 0px #78350f;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+    transition: all 0.1s ease;
+}
+.rpg-btn-yellow:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+.rpg-btn-yellow:active {
+    border-bottom-width: 2px;
+    transform: translateY(4px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+/* RPG Medallion / Stat badges */
+.rpg-medallion {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(12px);
+    border: 4px solid #7c3aed; /* Violet border */
+    outline: 2px solid #fbbf24; /* Golden highlight */
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 0 15px rgba(124, 58, 237, 0.4);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.rpg-medallion:hover {
+    border-color: #a855f7;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 25px rgba(168, 85, 247, 0.6);
+    transform: translateY(-4px) scale(1.02);
+}
+
+/* Enigma Mini-scroll card */
+.enigma-scroll-card {
+    background: linear-gradient(135deg, #fffef9 0%, #f4ebd6 100%);
+    border: 3px solid #7c3aed;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4), inset 0 0 40px rgba(139, 94, 26, 0.15);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.enigma-scroll-card:hover {
+    border-color: #fbbf24;
+    box-shadow: 0 15px 35px rgba(124, 58, 237, 0.35), inset 0 0 40px rgba(139, 94, 26, 0.1);
+    transform: translateY(-6px) scale(1.02);
+}
 </style>

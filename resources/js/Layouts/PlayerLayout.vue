@@ -25,6 +25,9 @@ const dashboardContainer = ref(null);
 const showLogoutModal = ref(false);
 const showPauseModal = ref(false);
 const showTimeUpModal = ref(false);
+const showSettingsModal = ref(false);
+const soundEffectsActive = ref(true);
+const ambientMusicActive = ref(false);
 
 let heartbeatInterval = null;
 
@@ -158,20 +161,13 @@ onUnmounted(() => {
         <div class="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-4 md:p-8">
             <!-- Top HUD -->
             <div class="flex justify-between items-start w-full">
-                <!-- Boutons Gauche (Menu + Logout) -->
+                <!-- Boutons Gauche (Menu) -->
                 <div class="flex items-center space-x-3">
                     <!-- Menu Button -->
                     <Link :href="route('player.dashboard')" class="pointer-events-auto w-12 h-12 md:w-16 md:h-16 bg-black/30 backdrop-blur-md border-2 border-white/20 rounded-2xl flex items-center justify-center text-white hover:bg-black/50 hover:scale-110 transition-all shadow-xl group">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 group-hover:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden group-hover:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     </Link>
-
-                    <!-- Logout Button -->
-                    <button @click="confirmLogout" class="pointer-events-auto w-12 h-12 md:w-16 md:h-16 bg-red-500/80 backdrop-blur-md border-2 border-red-400/50 rounded-2xl flex items-center justify-center text-white hover:bg-red-600 hover:scale-110 transition-all shadow-[0_5px_15px_rgba(239,68,68,0.5)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- Right HUD (Unified Stats & Timer) -->
@@ -282,6 +278,62 @@ onUnmounted(() => {
                         Oui, Quitter
                     </Link>
                 </div>
+            </div>
+        </div>
+
+        <!-- Bottom Floating Controls (Settings + Logout) -->
+        <div class="fixed bottom-6 left-6 z-50 pointer-events-auto flex items-center space-x-3">
+            <!-- Settings Button -->
+            <button @click="showSettingsModal = true" class="w-12 h-12 md:w-16 md:h-16 bg-purple-600/80 backdrop-blur-md border-2 border-purple-400/50 rounded-2xl flex items-center justify-center text-white hover:bg-purple-700 hover:scale-110 transition-all shadow-[0_5px_15px_rgba(124,58,237,0.5)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 animate-[spin_10s_linear_infinite]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+
+            <!-- Logout Button -->
+            <button @click="confirmLogout" class="w-12 h-12 md:w-16 md:h-16 bg-red-500/80 backdrop-blur-md border-2 border-red-400/50 rounded-2xl flex items-center justify-center text-white hover:bg-red-600 hover:scale-110 transition-all shadow-[0_5px_15px_rgba(239,68,68,0.5)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Settings Modal -->
+        <div v-if="showSettingsModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showSettingsModal = false"></div>
+            <div class="bg-white rounded-2xl p-8 max-w-sm w-full relative z-10 text-center shadow-2xl border-4 border-purple-500/20">
+                <div class="w-20 h-20 bg-purple-100 text-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-3xl font-black italic uppercase text-slate-800 mb-6 tracking-tighter">OPTIONS DE JEU</h3>
+                
+                <div class="space-y-4 mb-8">
+                    <!-- Son -->
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-sm font-bold uppercase text-slate-600">Effets Sonores</span>
+                        <button @click="soundEffectsActive = !soundEffectsActive" class="px-4 py-2 font-bold rounded-lg text-xs uppercase tracking-widest transition-all"
+                                :class="soundEffectsActive ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'">
+                            {{ soundEffectsActive ? 'Actifs' : 'Désactivés' }}
+                        </button>
+                    </div>
+
+                    <!-- Musique -->
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-sm font-bold uppercase text-slate-600">Musique d'ambiance</span>
+                        <button @click="ambientMusicActive = !ambientMusicActive" class="px-4 py-2 font-bold rounded-lg text-xs uppercase tracking-widest transition-all"
+                                :class="ambientMusicActive ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'">
+                            {{ ambientMusicActive ? 'Active' : 'Désactivée' }}
+                        </button>
+                    </div>
+                </div>
+
+                <button @click="showSettingsModal = false" class="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all text-xs">
+                    Retour au jeu
+                </button>
             </div>
         </div>
     </div>
