@@ -89,6 +89,8 @@ const initGameMap = () => {
         watchId.value = navigator.geolocation.watchPosition((position) => {
             const { latitude, longitude } = position.coords;
             const playerPos = [latitude, longitude];
+            
+            console.log("Position joueur récupérée:", latitude, longitude); // Pour debug
 
             if (!playerMarker) {
                 const playerIcon = L.divIcon({
@@ -109,7 +111,8 @@ const initGameMap = () => {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
         }, (err) => console.error("Erreur GPS:", err), {
             enableHighAccuracy: true,
-            maximumAge: 0
+            maximumAge: 10000, // Maximum 10 secondes de cache
+            timeout: 30000, // Timeout après 30 secondes
         });
     }
 
@@ -242,6 +245,10 @@ const validerGPS = () => {
         }, (error) => {
             loading.value = false;
             showModal('error', 'Erreur GPS', "Impossible de récupérer votre position : " + error.message);
+        }, {
+            enableHighAccuracy: true,
+            maximumAge: 10000,
+            timeout: 30000,
         });
     } else {
         loading.value = false;

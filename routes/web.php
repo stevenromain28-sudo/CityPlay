@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\SessionJeuController;
 use App\Http\Controllers\GameplayController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Admin\VilleController;
 use App\Http\Controllers\Admin\LieuController;
 use App\Http\Controllers\Admin\EnigmeController;
@@ -34,6 +35,10 @@ Route::get('/dashboard', function () {
     }
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Invitation Routes (accessible sans auth pour l'affichage, mais acceptation nécessite auth)
+Route::get('/invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+Route::post('/invitation/{token}/accept', [InvitationController::class, 'accept'])->middleware('auth')->name('invitation.accept');
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin|super_admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -87,6 +92,9 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     
     // Auto-start game from dashboard
     Route::post('/game/auto-start', [PlayerController::class, 'autoStart'])->name('game.auto-start');
+
+    // Invitations
+    Route::post('/invitations', [InvitationController::class, 'store'])->name('invitations.store');
 
     // Sessions de jeu
     Route::resource('sessions', SessionJeuController::class);

@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'equipe_id',
+        'role_equipe',
     ];
 
     /**
@@ -50,5 +52,15 @@ class User extends Authenticatable
     public function sessions()
     {
         return $this->hasMany(JoueurSession::class);
+    }
+
+    public function equipe()
+    {
+        return $this->belongsTo(Equipe::class);
+    }
+
+    public function estChefEquipe(): bool
+    {
+        return $this->role_equipe === 'chef';
     }
 }

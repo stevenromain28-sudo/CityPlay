@@ -9,6 +9,7 @@ class JoueurSession extends Model
     protected $table = 'joueur_sessions';
 
     protected $fillable = [
+        'equipe_id',
         'session_jeu_id',
         'user_id',
         'type',
@@ -21,6 +22,12 @@ class JoueurSession extends Model
     | RELATIONS
     |--------------------------------------------------------------------------
     */
+
+    // Une participation appartient à une équipe
+    public function equipe()
+    {
+        return $this->belongsTo(Equipe::class);
+    }
 
     // Une participation appartient à une session
     public function sessionJeu()

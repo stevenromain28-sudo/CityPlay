@@ -119,6 +119,36 @@ class GameplayController extends Controller
     {
         $progression->update(['text_validated_at' => now()]);
 
+        // Si l'utilisateur est dans une équipe, partager la progression avec toute l'équipe
+        $equipe = $user->equipe;
+        if ($equipe) {
+            // Créer/mettre à jour la progression pour l'équipe
+            ProgressionEnigme::firstOrCreate(
+                [
+                    'equipe_id' => $equipe->id,
+                    'session_jeu_id' => $session->id,
+                    'enigme_id' => $enigme->id,
+                ],
+                ['user_id' => $user->id]
+            )->update(['text_validated_at' => now()]);
+
+            // Pour chaque membre de l'équipe, créer sa propre progression si elle n'existe pas
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $progressionMembre = ProgressionEnigme::firstOrCreate(
+                        [
+                            'session_jeu_id' => $session->id,
+                            'user_id' => $membre->id,
+                            'enigme_id' => $enigme->id,
+                        ]
+                    );
+                    if (!$progressionMembre->text_validated_at) {
+                        $progressionMembre->update(['text_validated_at' => now()]);
+                    }
+                }
+            }
+        }
+
         // Si c'est une énigme bonus, on donne direct les points bonus et on finit
         if ($enigme->is_bonus) {
             $scoreGagne = $this->scoreService->calculerBonus($enigme);
@@ -129,6 +159,21 @@ class GameplayController extends Controller
             
             if ($joueurSession) {
                 $joueurSession->increment('score', $scoreGagne);
+            }
+
+            // Si en équipe, partager les points avec l'équipe
+            if ($equipe) {
+                $equipe->increment('score_total', $scoreGagne);
+                foreach ($equipe->membres as $membre) {
+                    if ($membre->id !== $user->id) {
+                        $jsMembre = JoueurSession::where('session_jeu_id', $session->id)
+                            ->where('user_id', $membre->id)
+                            ->first();
+                        if ($jsMembre) {
+                            $jsMembre->increment('score', $scoreGagne);
+                        }
+                    }
+                }
             }
 
             // Enregistrer la tentative réussie pour le bonus
@@ -143,7 +188,8 @@ class GameplayController extends Controller
                 'success' => true,
                 'message' => 'Bonus validé ! +' . $scoreGagne . ' XP',
                 'is_bonus' => true,
-                'score_gagne' => $scoreGagne
+                'score_gagne' => $scoreGagne,
+                'equipe' => $equipe
             ]);
         }
 
@@ -158,6 +204,21 @@ class GameplayController extends Controller
             $joueurSession->increment('score', $scoreGagne);
         }
 
+        // Si en équipe, partager les points avec l'équipe
+        if ($equipe) {
+            $equipe->increment('score_total', $scoreGagne);
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $jsMembre = JoueurSession::where('session_jeu_id', $session->id)
+                        ->where('user_id', $membre->id)
+                        ->first();
+                    if ($jsMembre) {
+                        $jsMembre->increment('score', $scoreGagne);
+                    }
+                }
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Mystère résolu ! Le lieu est révélé. Maintenant, rendez-vous sur place !',
@@ -166,13 +227,40 @@ class GameplayController extends Controller
             'lieu' => [
                 'nom' => $enigme->lieu->nom,
                 'image' => $enigme->lieu->image ?? $enigme->image
-            ]
+            ],
+            'equipe' => $equipe
         ]);
     }
 
     protected function marquerGPSCommeValide(SessionJeu $session, Enigme $enigme, $user, $progression)
     {
         $progression->update(['gps_validated_at' => now()]);
+
+        // Si l'utilisateur est dans une équipe, partager la progression avec toute l'équipe
+        $equipe = $user->equipe;
+        if ($equipe) {
+            // Mettre à jour la progression de l'équipe
+            $progressionEquipe = ProgressionEnigme::where('equipe_id', $equipe->id)
+                ->where('session_jeu_id', $session->id)
+                ->where('enigme_id', $enigme->id)
+                ->first();
+            if ($progressionEquipe) {
+                $progressionEquipe->update(['gps_validated_at' => now()]);
+            }
+
+            // Pour chaque membre de l'équipe, mettre à jour sa progression
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $progressionMembre = ProgressionEnigme::where('session_jeu_id', $session->id)
+                        ->where('user_id', $membre->id)
+                        ->where('enigme_id', $enigme->id)
+                        ->first();
+                    if ($progressionMembre && !$progressionMembre->gps_validated_at) {
+                        $progressionMembre->update(['gps_validated_at' => now()]);
+                    }
+                }
+            }
+        }
 
         // Score partiel (60%)
         $scoreGagne = $this->scoreService->calculerScoreEnigme($enigme, 0, 0, 'gps');
@@ -184,6 +272,22 @@ class GameplayController extends Controller
         if ($joueurSession) {
             $joueurSession->increment('score', $scoreGagne);
             $joueurSession->increment('progression');
+        }
+
+        // Si en équipe, partager les points et la progression avec l'équipe
+        if ($equipe) {
+            $equipe->increment('score_total', $scoreGagne);
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $jsMembre = JoueurSession::where('session_jeu_id', $session->id)
+                        ->where('user_id', $membre->id)
+                        ->first();
+                    if ($jsMembre) {
+                        $jsMembre->increment('score', $scoreGagne);
+                        $jsMembre->increment('progression');
+                    }
+                }
+            }
         }
 
         // On libère l'énigme courante de la session
@@ -203,7 +307,8 @@ class GameplayController extends Controller
             'gps_validated' => true,
             'score_gagne' => $scoreGagne,
             'content' => $enigme->lieu->contenuCulturel,
-            'show_choice' => true
+            'show_choice' => true,
+            'equipe' => $equipe
         ]);
     }
 

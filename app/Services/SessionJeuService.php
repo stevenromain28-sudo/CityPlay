@@ -6,6 +6,7 @@ use App\Models\SessionJeu;
 use App\Models\JoueurSession;
 use App\Models\Ville;
 use App\Models\User;
+use App\Models\Equipe;
 use App\Events\SessionCommencee;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -26,19 +27,56 @@ class SessionJeuService
                 'statut' => 'en_attente',
                 'score' => 0,
                 'progression' => 0,
+                'equipe_id' => $data['equipe_id'] ?? null,
             ]);
 
-            // Ajouter le propriétaire comme premier joueur
-            JoueurSession::create([
-                'session_jeu_id' => $session->id,
-                'user_id' => $owner->id,
-                'type' => 'proprietaire',
-                'score' => 0,
-                'progression' => 0,
-            ]);
+            // Si c'est une session d'équipe, ajouter TOUS les membres de l'équipe
+            if (isset($data['equipe_id'])) {
+                $equipe = Equipe::findOrFail($data['equipe_id']);
+                $membres = $equipe->membres;
+                
+                foreach ($membres as $membre) {
+                    JoueurSession::firstOrCreate([
+                        'session_jeu_id' => $session->id,
+                        'user_id' => $membre->id,
+                    ], [
+                        'type' => $membre->id === $equipe->chef_id ? 'proprietaire' : 'partenaire',
+                        'score' => 0,
+                        'progression' => 0,
+                    ]);
+                }
+            } else {
+                // Sinon, ajouter seulement le propriétaire
+                JoueurSession::create([
+                    'session_jeu_id' => $session->id,
+                    'user_id' => $owner->id,
+                    'type' => 'proprietaire',
+                    'score' => 0,
+                    'progression' => 0,
+                ]);
+            }
 
             return $session;
         });
+    }
+
+    /**
+     * Ajouter un membre d'équipe à une session existante.
+     */
+    public function ajouterMembreEquipeASession(User $user, SessionJeu $session, string $type = 'partenaire'): JoueurSession
+    {
+        if ($session->joueurs()->count() >= 10) {
+            throw new Exception("La session est complète (max 10 joueurs).");
+        }
+
+        return JoueurSession::firstOrCreate([
+            'session_jeu_id' => $session->id,
+            'user_id' => $user->id,
+        ], [
+            'type' => $type,
+            'score' => 0,
+            'progression' => 0,
+        ]);
     }
 
     /**

@@ -18,6 +18,7 @@ class SessionJeu extends Model
         'current_enigme_id',
         'commence_le',
         'termine_le',
+        'equipe_id',
     ];
 
     public function currentEnigme()
@@ -33,5 +34,10 @@ class SessionJeu extends Model
     public function ville()
     {
         return $this->belongsTo(Ville::class);
+    }
+
+    public function equipe()
+    {
+        return $this->belongsTo(Equipe::class);
     }
 }

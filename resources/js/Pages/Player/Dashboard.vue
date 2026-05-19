@@ -9,11 +9,16 @@ const props = defineProps({
     recent_sessions: Array,
     villes_disponibles: Array,
     ville_detectee: Object,
-    localisation_requise: Boolean
+    localisation_requise: Boolean,
+    equipe: Object,
+    lien_invitation: String,
+    invitation: Object
 });
 
 const detectant = ref(false);
 const messageErreur = ref(null);
+const copieReussi = ref(false);
+const creationInvitation = ref(false);
 
 onMounted(() => {
     if (props.localisation_requise) {
@@ -72,7 +77,6 @@ const obtenirLocalisation = () => {
 };
 
 const lancerJeu = () => {
-    // Récupérer les coordonnées actuelles depuis l'URL pour les transmettre au backend
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');
     const lng = urlParams.get('lng');
@@ -81,6 +85,32 @@ const lancerJeu = () => {
         ville_id: props.ville_detectee?.id,
         lat: lat,
         lng: lng
+    });
+};
+
+const copierLien = async () => {
+    if (props.lien_invitation) {
+        try {
+            await navigator.clipboard.writeText(props.lien_invitation);
+            copieReussi.value = true;
+            setTimeout(() => copieReussi.value = false, 2000);
+        } catch (err) {
+            console.error('Erreur lors de la copie:', err);
+        }
+    }
+};
+
+const creerInvitation = () => {
+    router.post(route('player.invitations.store'), {
+        duree_minutes: 60,
+        max_utilisations: 10
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            creationInvitation.value = true;
+            setTimeout(() => creationInvitation.value = false, 2000);
+        }
     });
 };
 </script>
@@ -112,7 +142,7 @@ const lancerJeu = () => {
             </div>
 
             <!-- MENU PRINCIPAL DU JEU -->
-            <div v-else-if="ville_detectee" class="w-full max-w-md flex flex-col items-center justify-center gap-8">
+            <div v-else-if="ville_detectee" class="w-full max-w-4xl flex flex-col items-center justify-center gap-8">
                 
                 <!-- Titre du jeu animé -->
                 <div class="game-title text-center mb-6">
@@ -124,8 +154,53 @@ const lancerJeu = () => {
                     </div>
                 </div>
 
+                <!-- SECTION ÉQUIPE / INVITATION -->
+                <div class="w-full bg-black/50 backdrop-blur-md p-6 rounded-3xl border-2 border-yellow-400/50">
+                    <h3 class="text-2xl font-black italic uppercase text-yellow-400 tracking-widest mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-8 h-8 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        {{ equipe ? equipe.nom : 'Inviter des amis' }}
+                    </h3>
+
+                    <!-- Si équipe existe -->
+                    <div v-if="equipe">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-white/70 text-sm font-bold">
+                                Score: {{ equipe.score_total }} XP
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <div v-for="membre in equipe.membres" :key="membre.id" 
+                                 class="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span class="text-white font-bold">{{ membre.name }}</span>
+                                <span v-if="membre.id === equipe.chef_id" class="text-yellow-400 text-xs font-bold uppercase">Chef</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lien d'invitation (seulement pour le chef ou si pas d'équipe) -->
+                    <div v-if="!equipe || (equipe && equipe.chef_id === $page.props.auth.user.id)">
+                        <div v-if="lien_invitation" class="flex gap-3">
+                            <input type="text" readonly :value="lien_invitation" 
+                                   class="flex-1 px-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white font-mono text-sm">
+                            <button @click="copierLien" 
+                                    class="px-6 py-3 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-all">
+                                {{ copieReussi ? 'Copié !' : 'Copier' }}
+                            </button>
+                        </div>
+                        <button v-else @click="creerInvitation" 
+                                class="w-full px-6 py-3 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all">
+                            {{ creationInvitation ? 'Invitation Créée !' : 'Créer un lien d\'invitation' }}
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Boutons du menu -->
-                <div class="flex flex-col w-full gap-5">
+                <div class="flex flex-col w-full max-w-md gap-5">
                     
                     <!-- Bouton JOUER (Principal) -->
                     <button @click="lancerJeu" class="menu-btn group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
@@ -149,16 +224,8 @@ const lancerJeu = () => {
                         </div>
                     </Link>
 
-                    <!-- Bouton INVITATION -->
-                    <Link :href="route('player.invitation')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-200 to-slate-400 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform mt-2 opacity-90">
-                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-white to-slate-200 px-6 py-4 flex items-center justify-center border-t border-white">
-                            <span class="text-2xl md:text-3xl font-black italic uppercase text-[#7C3AED] drop-shadow-sm tracking-widest">Inviter des amis</span>
-                        </div>
-                    </Link>
-
                 </div>
             </div>
-
         </div>
     </PlayerLayout>
 </template>

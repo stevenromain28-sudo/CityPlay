@@ -9,6 +9,7 @@ class ProgressionEnigme extends Model
     protected $table = 'progression_enigmes';
 
     protected $fillable = [
+        'equipe_id',
         'session_jeu_id',
         'user_id',
         'enigme_id',
@@ -17,6 +18,11 @@ class ProgressionEnigme extends Model
         'bonus_choice_made',
         'wants_bonus',
     ];
+
+    public function equipe()
+    {
+        return $this->belongsTo(Equipe::class);
+    }
 
     public function sessionJeu()
     {

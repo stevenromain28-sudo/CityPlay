@@ -6,19 +6,46 @@ const props = defineProps({
     top_joueurs: {
         type: Array,
         default: () => []
+    },
+    top_equipes: {
+        type: Array,
+        default: () => []
     }
 });
 </script>
 
 <template>
     <PlayerLayout title="Classement Mondial">
-        <div class="space-y-8 max-w-5xl mx-auto pt-24 md:pt-32 pb-12 px-4 md:px-8">
+        <div class="space-y-12 max-w-5xl mx-auto pt-24 md:pt-32 pb-12 px-4 md:px-8">
             <div class="text-center md:text-left mb-12 bg-black/40 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
                 <h2 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white drop-shadow-md">Le <span class="text-yellow-400">Classement</span></h2>
                 <p class="text-slate-300 text-sm md:text-base font-bold uppercase tracking-widest mt-2">Qui sera le plus grand explorateur ?</p>
             </div>
 
-            <!-- Top 3 Podium -->
+            <!-- Classement ÉQUIPES -->
+            <div v-if="top_equipes.length > 0" class="bg-black/40 backdrop-blur-md rounded-[3rem] p-8 border border-yellow-400/30 shadow-2xl">
+                <h3 class="text-3xl font-black italic uppercase text-yellow-400 mb-8 flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Classement des Équipes
+                </h3>
+                <div class="space-y-4">
+                    <div v-for="(equipe, index) in top_equipes" :key="equipe.id" class="p-6 bg-white/10 rounded-2xl border border-white/20 flex items-center justify-between hover:bg-white/15 transition-colors">
+                        <div class="flex items-center space-x-6">
+                            <span class="text-3xl font-black italic text-yellow-400 w-10">{{ index + 1 }}</span>
+                            <div>
+                                <h5 class="text-xl font-black italic uppercase text-white">
+                                    {{ equipe.nom }}
+                                </h5>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-black italic text-yellow-400">{{ equipe.total_score }} XP</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 3 Podium JOUEURS INDIVIDUELS -->
             <div v-if="top_joueurs.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-10 items-end py-10 px-4">
                 <!-- Rank 2 -->
                 <div v-if="top_joueurs[1]" class="bg-white/10 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl border border-white/20 flex flex-col items-center relative order-2 md:order-1 h-80 justify-center transition-transform hover:scale-105">
@@ -62,7 +89,7 @@ const props = defineProps({
                 <div v-else class="order-3 h-72"></div>
             </div>
 
-            <!-- Rest of Leaderboard Table -->
+            <!-- Rest of Leaderboard Table (JOUEURS INDIVIDUELS) -->
             <div v-if="top_joueurs.length > 3" class="bg-black/40 backdrop-blur-md rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden mb-12">
                 <div class="divide-y divide-white/5">
                     <div v-for="(joueur, index) in top_joueurs.slice(3)" :key="joueur.id" class="p-6 md:p-8 flex items-center justify-between hover:bg-white/5 transition-colors group" :class="{ 'bg-white/5 border-l-4 border-yellow-400': $page.props.auth.user.id === joueur.id }">
@@ -86,7 +113,7 @@ const props = defineProps({
                 </div>
             </div>
             
-            <div v-if="top_joueurs.length === 0" class="text-center bg-black/40 backdrop-blur-md p-10 rounded-3xl border border-white/10">
+            <div v-if="top_joueurs.length === 0 && top_equipes.length === 0" class="text-center bg-black/40 backdrop-blur-md p-10 rounded-3xl border border-white/10">
                 <p class="text-white font-bold text-xl uppercase tracking-widest">Aucun explorateur dans le classement pour le moment.</p>
             </div>
         </div>

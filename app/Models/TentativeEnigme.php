@@ -16,4 +16,9 @@ class TentativeEnigme extends Model
         'succes',
         'tente_le',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
