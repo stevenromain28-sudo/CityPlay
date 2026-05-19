@@ -88,10 +88,17 @@ const obtenirLocalisation = () => {
     }
 };
 
+const showInviteModal = ref(false);
+
 const openStartModal = () => {
     showDurationModal.value = true;
-    currentStep.value = 1;
+    currentStep.value = 1; // 1: choix déplacement, 2: choix temps
     selectedTransport.value = null;
+};
+
+const selectTransport = (transport) => {
+    selectedTransport.value = transport;
+    currentStep.value = 2; // Aller à la saisie de la durée
 };
 
 const lancerJeu = () => {
@@ -100,12 +107,6 @@ const lancerJeu = () => {
         return;
     }
 
-    currentStep.value = 2;
-};
-
-const confirmTransport = (transport) => {
-    selectedTransport.value = transport;
-    
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');
     const lng = urlParams.get('lng');
@@ -116,7 +117,7 @@ const confirmTransport = (transport) => {
         lng: lng,
         duree: duration.value,
         moyen_transport: selectedTransport.value,
-        nouvelle_session: true // Indiquer que c'est une nouvelle session, même si une existe
+        nouvelle_session: true // Indiquer que c'est une nouvelle session
     });
 };
 
@@ -177,10 +178,10 @@ const creerInvitation = () => {
             </div>
 
             <!-- Affichage Erreur GPS -->
-            <div v-else-if="!ville_detectee && !detectant" class="text-center bg-black/50 backdrop-blur-md p-10 rounded-3xl border-2 border-red-500/50 max-w-lg">
+            <div v-else-if="!ville_detectee && !detectant" class="text-center bg-black/50 backdrop-blur-md p-10 rounded-2xl border-2 border-red-500/50 max-w-lg">
                 <h2 class="text-4xl font-black italic uppercase text-red-400 drop-shadow-xl mb-4">Hors Zone</h2>
                 <p class="text-white font-bold uppercase tracking-widest mb-8">{{ messageErreur || "Aucune ville à proximité" }}</p>
-                <button @click="obtenirLocalisation" class="px-8 py-4 bg-yellow-400 text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all text-xl">
+                <button @click="obtenirLocalisation" class="px-8 py-4 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all text-xl">
                     Réessayer
                 </button>
             </div>
@@ -198,87 +199,49 @@ const creerInvitation = () => {
                     </div>
                 </div>
 
-                <!-- SECTION ÉQUIPE / INVITATION -->
-                <div class="w-full bg-black/50 backdrop-blur-md p-6 rounded-3xl border-2 border-yellow-400/50">
-                    <h3 class="text-2xl font-black italic uppercase text-yellow-400 tracking-widest mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-8 h-8 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        {{ equipe ? equipe.nom : 'Inviter des amis' }}
-                    </h3>
-
-                    <!-- Si équipe existe -->
-                    <div v-if="equipe">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-white/70 text-sm font-bold">
-                                Score: {{ equipe.score_total }} XP
-                            </span>
-                        </div>
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            <div v-for="membre in equipe.membres" :key="membre.id" 
-                                 class="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                <span class="text-white font-bold">{{ membre.name }}</span>
-                                <span v-if="membre.id === equipe.chef_id" class="text-yellow-400 text-xs font-bold uppercase">Chef</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lien d'invitation (seulement pour le chef ou si pas d'équipe) -->
-                    <div v-if="!equipe || (equipe && equipe.chef_id === $page.props.auth.user.id)">
-                        <div v-if="lien_invitation" class="flex gap-3">
-                            <input type="text" readonly :value="lien_invitation" 
-                                   class="flex-1 px-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white font-mono text-sm">
-                            <button @click="copierLien" 
-                                    class="px-6 py-3 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-all">
-                                {{ copieReussi ? 'Copié !' : 'Copier' }}
-                            </button>
-                        </div>
-                        <button v-else @click="creerInvitation" 
-                                class="w-full px-6 py-3 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all">
-                            {{ creationInvitation ? 'Invitation Créée !' : 'Créer un lien d\'invitation' }}
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Boutons du menu -->
-                <div class="flex flex-col w-full max-w-md gap-5">
+                <div class="flex flex-col w-full max-w-md gap-4">
                     
                     <!-- Bouton CONTINUER (si session en pause ou active) -->
-                    <button v-if="active_session" @click="continuerSession" class="menu-btn group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-green-300 to-green-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(34,197,94,0.6)] hover:scale-105 active:scale-95 transition-transform">
-                        <div class="relative w-full rounded-[1.9rem] bg-gradient-to-b from-green-400 to-green-600 px-8 py-6 flex items-center justify-center border-t border-green-200">
-                            <span class="text-4xl md:text-5xl font-black italic uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] tracking-widest group-hover:text-green-50 transition-colors">Continuer</span>
-                            <div class="absolute inset-0 rounded-[1.9rem] bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                    <button v-if="active_session" @click="continuerSession" class="menu-btn group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-green-300 to-green-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(34,197,94,0.6)] hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-xl bg-gradient-to-b from-green-400 to-green-600 px-8 py-5 flex items-center justify-center border-t border-green-200">
+                            <span class="text-3xl md:text-4xl font-black italic uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] tracking-widest group-hover:text-green-50 transition-colors">Continuer</span>
+                            <div class="absolute inset-0 rounded-xl bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
                         </div>
                     </button>
 
                     <!-- Bouton JOUER (Principal) -->
-                    <button @click="openStartModal" class="menu-btn group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
-                        <div class="relative w-full rounded-[1.9rem] bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-6 flex items-center justify-center border-t border-yellow-200">
-                            <span class="text-4xl md:text-5xl font-black italic uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] tracking-widest group-hover:text-yellow-50 transition-colors">{{ active_session ? 'Nouvelle Partie' : 'Jouer' }}</span>
-                            <div class="absolute inset-0 rounded-[1.9rem] bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                    <button @click="openStartModal" class="menu-btn group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-xl bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-5 flex items-center justify-center border-t border-yellow-200">
+                            <span class="text-3xl md:text-4xl font-black italic uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] tracking-widest group-hover:text-yellow-50 transition-colors">{{ active_session ? 'Nouvelle Partie' : 'Jouer' }}</span>
+                            <div class="absolute inset-0 rounded-xl bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                        </div>
+                    </button>
+
+                    <!-- Bouton INVITER DES AMIS -->
+                    <button @click="showInviteModal = true" class="menu-btn group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-purple-400 to-purple-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-xl bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                            <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Inviter des Amis</span>
                         </div>
                     </button>
 
                     <!-- Bouton CARTE -->
-                    <Link :href="route('player.map')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
-                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                    <Link :href="route('player.map')" class="menu-btn group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-xl bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
                             <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Carte</span>
                         </div>
                     </Link>
 
                     <!-- Bouton HISTORIQUE CULTUREL -->
-                    <Link :href="route('player.historique-culturel')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
-                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                    <Link :href="route('player.historique-culturel')" class="menu-btn group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-xl bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
                             <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Historique Culturel</span>
                         </div>
                     </Link>
 
                     <!-- Bouton STATISTIQUES -->
-                    <Link :href="route('player.leaderboard')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
-                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                    <Link :href="route('player.leaderboard')" class="menu-btn group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-xl bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
                             <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Statistiques</span>
                         </div>
                     </Link>
@@ -289,42 +252,11 @@ const creerInvitation = () => {
             <!-- Duration & Transport Selection Modal -->
             <div v-if="showDurationModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showDurationModal = false"></div>
-                <div class="bg-white rounded-[3rem] p-8 md:p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/20">
+                <div class="bg-white rounded-2xl p-8 md:p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/20">
                     
-                    <!-- STEP 1: CHOIX TEMPS -->
+                    <!-- STEP 1: CHOIX DEPLACEMENT -->
                     <div v-if="currentStep === 1">
-                        <div class="w-24 h-24 bg-yellow-100 text-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </div>
-                        
-                        <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Nouvelle Quête</h3>
-                        <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Combien de temps durera votre aventure ?</p>
-
-                        <div class="space-y-6 mb-10">
-                            <div class="relative">
-                                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-left ml-4">Durée de la session (min)</label>
-                                <input type="number" v-model="duration" min="45"
-                                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 px-8 text-2xl font-black text-slate-800 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all text-center">
-                                <div class="absolute right-6 top-[55px] text-slate-300 font-black uppercase text-xs italic">min</div>
-                            </div>
-                            
-                            <p v-if="durationError" class="text-red-500 font-black uppercase text-[10px] animate-bounce">{{ durationError }}</p>
-                            <p v-else class="text-slate-400 font-bold text-[10px] uppercase">Minimum requis : 45 minutes</p>
-                        </div>
-
-                        <div class="flex gap-4">
-                            <button @click="showDurationModal = false" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-md">
-                                Annuler
-                            </button>
-                            <button @click="lancerJeu" class="flex-1 py-5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:scale-105 active:scale-95 transition-all">
-                                Suivant
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- STEP 2: CHOIX DEPLACEMENT -->
-                    <div v-if="currentStep === 2">
-                        <div class="w-24 h-24 bg-blue-100 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <div class="w-24 h-24 bg-blue-100 text-[#7C3AED] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </div>
 
@@ -332,8 +264,8 @@ const creerInvitation = () => {
                         <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Comment allez-vous vous déplacer ?</p>
 
                         <div class="grid grid-cols-1 gap-4 mb-8">
-                            <button @click="confirmTransport('pied')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
-                                <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                            <button @click="selectTransport('pied')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+                                <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M4 17l3-2 3 1 1-2"/><path d="M14 7l-2 2v3l2 2"/><path d="M15 21l-2-4-3 1"/><path d="M9 21l2-4"/></svg>
                                 </div>
                                 <div class="text-left">
@@ -342,8 +274,8 @@ const creerInvitation = () => {
                                 </div>
                             </button>
 
-                            <button @click="confirmTransport('moto')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
-                                <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                            <button @click="selectTransport('moto')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+                                <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M12 17h1.5l3-3.5"/><path d="M8.5 17l2-5h5.5l1.5 5"/><path d="M11.5 12l.5-4h3l.5 4"/><path d="M13 8l1-3h3"/></svg>
                                 </div>
                                 <div class="text-left">
@@ -352,8 +284,8 @@ const creerInvitation = () => {
                                 </div>
                             </button>
 
-                            <button @click="confirmTransport('voiture')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
-                                <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                            <button @click="selectTransport('voiture')" class="flex items-center gap-6 p-4 bg-slate-50 border-2 border-slate-100 rounded-xl hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+                                <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
                                 </div>
                                 <div class="text-left">
@@ -363,11 +295,100 @@ const creerInvitation = () => {
                             </button>
                         </div>
 
-                        <button @click="currentStep = 1" class="w-full py-4 text-slate-400 font-black uppercase text-xs tracking-[0.3em] hover:text-slate-600 transition-colors">
-                            Retour
+                        <button @click="showDurationModal = false" class="w-full py-4 text-slate-400 font-black uppercase text-xs tracking-[0.3em] hover:text-slate-600 transition-colors">
+                            Annuler
                         </button>
                     </div>
 
+                    <!-- STEP 2: CHOIX TEMPS -->
+                    <div v-if="currentStep === 2">
+                        <div class="w-24 h-24 bg-yellow-100 text-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        
+                        <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Durée</h3>
+                        <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Combien de temps durera votre aventure ?</p>
+
+                        <div class="space-y-6 mb-10">
+                            <div class="relative">
+                                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-left ml-4">Durée de la session (min)</label>
+                                <input type="number" v-model="duration" min="45"
+                                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-5 px-8 text-2xl font-black text-slate-800 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all text-center">
+                                <div class="absolute right-6 top-[55px] text-slate-300 font-black uppercase text-xs italic">min</div>
+                            </div>
+                            
+                            <p v-if="durationError" class="text-red-500 font-black uppercase text-[10px] animate-bounce">{{ durationError }}</p>
+                            <p v-else class="text-slate-400 font-bold text-[10px] uppercase">Minimum requis : 45 minutes</p>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button @click="currentStep = 1" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-md">
+                                Retour
+                            </button>
+                            <button @click="lancerJeu" class="flex-1 py-5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:scale-105 active:scale-95 transition-all">
+                                Démarrer
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Modal Invitation dédié -->
+            <div v-if="showInviteModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showInviteModal = false"></div>
+                <div class="bg-white rounded-2xl p-8 max-w-md w-full relative z-10 shadow-2xl border-4 border-yellow-400/20">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-3xl font-black italic uppercase text-slate-800 tracking-tighter">Inviter des amis</h3>
+                        <p class="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-1">Recrutez des explorateurs dans votre équipe</p>
+                    </div>
+
+                    <!-- Si équipe existante -->
+                    <div v-if="equipe" class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <h4 class="text-slate-700 font-black uppercase text-xs mb-3 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-yellow-400 rounded-full animate-ping"></span>
+                            Équipe : {{ equipe.nom }}
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <div v-for="membre in equipe.membres" :key="membre.id" 
+                                 class="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#7C3AED]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span>{{ membre.name }}</span>
+                                <span v-if="membre.id === equipe.chef_id" class="text-yellow-500 font-black uppercase text-[8px] tracking-wider ml-1">Chef</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lien d'invitation -->
+                    <div v-if="!equipe || (equipe && equipe.chef_id === $page.props.auth.user.id)" class="space-y-4">
+                        <p class="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Partagez ce lien unique avec vos partenaires :</p>
+                        <div v-if="lien_invitation" class="flex gap-2">
+                            <input type="text" readonly :value="lien_invitation" 
+                                   class="flex-1 px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl text-slate-700 font-mono text-xs focus:outline-none">
+                            <button @click="copierLien" 
+                                    class="px-5 py-3 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase text-sm tracking-wider hover:scale-105 transition-all shadow-md">
+                                {{ copieReussi ? 'Copié !' : 'Copier' }}
+                             </button>
+                        </div>
+                        <button v-else @click="creerInvitation" 
+                                class="w-full py-4 bg-yellow-400 text-slate-900 rounded-xl font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all shadow-md text-sm">
+                            {{ creationInvitation ? 'Création...' : 'Créer un lien d\'invitation' }}
+                        </button>
+                    </div>
+                    <div v-else class="text-center bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200">
+                        <p class="text-slate-400 font-bold text-xs uppercase">Seul le chef d'équipe peut générer des invitations.</p>
+                    </div>
+
+                    <button @click="showInviteModal = false" class="w-full mt-6 py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all text-xs">
+                        Fermer
+                    </button>
                 </div>
             </div>
 

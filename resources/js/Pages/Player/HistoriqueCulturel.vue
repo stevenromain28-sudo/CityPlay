@@ -108,7 +108,7 @@ onMounted(() => {
                 </p>
                 <Link :href="route('player.dashboard')" 
                       class="inline-block px-8 py-4 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-transform">
-                    Retour au Dashboard
+                    Retour au Menu
                 </Link>
             </div>
 

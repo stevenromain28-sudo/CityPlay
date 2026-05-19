@@ -23,6 +23,10 @@ const props = defineProps({
     progression: {
         type: Object,
         default: null
+    },
+    autres_lieux: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -34,6 +38,19 @@ const localUnlockedIndices = ref(props.indices_debloques);
 const unlockedIndicesContent = ref({});
 const localProgression = ref(props.progression);
 const bonusEnigmes = ref([]);
+const showChangerLieuModal = ref(false);
+
+const changerLieu = (lieuId) => {
+    loading.value = true;
+    router.post(route('player.game.changer-lieu', { session: props.session.id }), {
+        lieu_id: lieuId
+    }, {
+        onFinish: () => {
+            loading.value = false;
+            showChangerLieuModal.value = false;
+        }
+    });
+};
 
 // Synchroniser les données locales quand les props changent (ex: après un router.reload)
 watch(() => props.enigme, (newEnigme) => {
@@ -337,13 +354,9 @@ const isIndiceUnlocked = (indiceId) => {
 
 <template>
     <PlayerLayout :title="enigme ? enigme.titre : 'En jeu'">
-        <!-- HUD Score Update local (si on veut forcer l'affichage) -->
-        <div class="fixed top-24 right-6 z-40 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-yellow-400/30 shadow-lg text-yellow-400 font-black text-xl italic drop-shadow-md pointer-events-none">
-            {{ localScore }} XP
-        </div>
 
         <div v-if="enigme" class="max-w-4xl mx-auto pt-32 pb-10 px-4 md:px-0">
-            <div class="game-card bg-white/90 backdrop-blur-md rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 overflow-hidden relative">
+            <div class="game-card bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 overflow-hidden relative">
                 <!-- Image de l'énigme -->
                 <div class="h-64 md:h-96 relative overflow-hidden">
                     <div v-if="!isTextValidated && !enigme.is_bonus" class="absolute inset-0 bg-slate-200 flex items-center justify-center">
@@ -354,11 +367,11 @@ const isIndiceUnlocked = (indiceId) => {
                     <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent"></div>
 
                     <div class="absolute top-6 left-6 flex flex-col gap-3">
-                        <span v-if="enigme.is_bonus" class="px-6 py-3 bg-gradient-to-b from-purple-500 to-purple-700 text-white text-xs font-black uppercase rounded-2xl tracking-widest shadow-xl border border-purple-300">
-                            MODE BONUS
+                        <span v-if="enigme.is_bonus" class="px-6 py-3 bg-gradient-to-b from-purple-500 to-purple-700 text-white text-xs font-black uppercase rounded-xl tracking-widest shadow-xl border border-purple-300">
+                             MODE BONUS
                         </span>
-                        <span v-else class="px-6 py-3 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white text-xs font-black uppercase rounded-2xl tracking-widest shadow-xl border border-yellow-200">
-                            Niveau {{ enigme.niveau }}
+                        <span v-else class="px-6 py-3 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white text-xs font-black uppercase rounded-xl tracking-widest shadow-xl border border-yellow-200">
+                             Niveau {{ enigme.niveau }}
                         </span>
                     </div>
                 </div>
@@ -368,21 +381,31 @@ const isIndiceUnlocked = (indiceId) => {
                     <h2 v-else class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-slate-800 drop-shadow-sm mb-6">{{ enigme.titre }}</h2>
 
                     <div class="prose prose-slate max-w-none mb-10">
-                        <p class="text-lg md:text-2xl font-bold text-slate-700 leading-relaxed italic bg-white/50 p-6 rounded-3xl border border-white shadow-inner">
+                        <p class="text-lg md:text-2xl font-bold text-slate-700 leading-relaxed italic bg-white/50 p-6 rounded-2xl border border-white shadow-inner">
                             "{{ enigme.contenu }}"
                         </p>
                     </div>
 
                     <!-- Actions -->
                     <div class="space-y-6">
+                        <!-- Changer de lieu (Si d'autres lieux sont disponibles et non validés) -->
+                        <div v-if="autres_lieux && autres_lieux.length > 0 && !isGpsValidated" class="flex justify-end pr-2">
+                            <button @click="showChangerLieuModal = true" class="text-purple-600 hover:text-purple-700 font-black uppercase text-sm tracking-widest flex items-center gap-2 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                Passer à un autre lieu
+                            </button>
+                        </div>
+
                         <!-- Réponse textuelle (Étape 1) -->
-                        <div v-if="!isTextValidated" class="bg-gradient-to-b from-yellow-50 to-white p-6 md:p-8 rounded-[2.5rem] border border-yellow-200 shadow-md">
+                        <div v-if="!isTextValidated" class="bg-gradient-to-b from-yellow-50 to-white p-6 md:p-8 rounded-2xl border border-yellow-200 shadow-md">
                             <h3 class="text-xl font-black italic uppercase text-yellow-600 mb-2">Résoudre le mystère</h3>
                             <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">Saisissez le mot clé pour révéler le lieu</p>
 
                             <div class="relative">
                                 <input v-model="reponseTextuelle" type="text" placeholder="VOTRE RÉPONSE ICI..."
-                                       class="w-full bg-white border-2 border-yellow-100 rounded-2xl py-5 px-8 text-sm md:text-base font-bold tracking-widest text-slate-700 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 transition-all placeholder:text-slate-300 shadow-inner">
+                                       class="w-full bg-white border-2 border-yellow-100 rounded-xl py-5 px-8 text-sm md:text-base font-bold tracking-widest text-slate-700 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 transition-all placeholder:text-slate-300 shadow-inner">
                                 <button @click="soumettreReponse" :disabled="loading"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg border border-yellow-300">
                                     <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -392,12 +415,12 @@ const isIndiceUnlocked = (indiceId) => {
                         </div>
 
                         <!-- Validation GPS (Étape 2) -->
-                        <div v-if="isTextValidated && !isGpsValidated" class="bg-gradient-to-b from-[#F0F7FF] to-white p-6 md:p-8 rounded-[2.5rem] border border-blue-100 shadow-md">
+                        <div v-if="isTextValidated && !isGpsValidated" class="bg-gradient-to-b from-[#F0F7FF] to-white p-6 md:p-8 rounded-2xl border border-blue-100 shadow-md">
                             <h3 class="text-xl font-black italic uppercase text-[#7C3AED] mb-2">Se rendre sur place</h3>
                             <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">Utilisez votre GPS pour gagner le reste des points !</p>
 
                             <!-- Carte de guidage -->
-                            <div class="h-64 md:h-80 w-full bg-slate-100 rounded-3xl mb-8 overflow-hidden border-4 border-white shadow-inner relative">
+                            <div class="h-64 md:h-80 w-full bg-slate-100 rounded-xl mb-8 overflow-hidden border-4 border-white shadow-inner relative">
                                 <div ref="mapContainer" class="w-full h-full z-0"></div>
                                 <div class="absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase text-[#7C3AED] shadow-sm">
                                     Rayon: {{ enigme.rayon || 50 }}m
@@ -405,7 +428,7 @@ const isIndiceUnlocked = (indiceId) => {
                             </div>
 
                             <button @click="validerGPS" :disabled="loading"
-                                    class="w-full py-5 bg-gradient-to-b from-[#7C3AED] to-purple-800 border-t border-purple-400 text-white rounded-3xl font-black text-xl md:text-2xl uppercase tracking-widest shadow-[0_10px_20px_-10px_rgba(124,58,237,0.8)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-4">
+                                    class="w-full py-5 bg-gradient-to-b from-[#7C3AED] to-purple-800 border-t border-purple-400 text-white rounded-xl font-black text-xl md:text-2xl uppercase tracking-widest shadow-[0_10px_20px_-10px_rgba(124,58,237,0.8)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-4">
                                 <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 <div v-else class="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                                 <span>{{ loading ? 'Vérification...' : 'Je suis arrivé !' }}</span>
@@ -416,10 +439,10 @@ const isIndiceUnlocked = (indiceId) => {
                         <div v-if="isGpsValidated" class="text-center py-10">
                             <h3 class="text-3xl font-black italic uppercase text-[#7C3AED] mb-8">Bravo ! Vous avez terminé ce lieu.</h3>
                             <div class="flex flex-col sm:flex-row gap-6 justify-center">
-                                <button @click="faireChoixBonus(false)" class="px-10 py-5 bg-slate-800 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl">
+                                <button @click="faireChoixBonus(false)" class="px-10 py-5 bg-slate-800 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl">
                                     Lieu suivant
                                 </button>
-                                <button @click="faireChoixBonus(true)" class="px-10 py-5 bg-yellow-400 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-yellow-500 transition-all shadow-xl">
+                                <button @click="faireChoixBonus(true)" class="px-10 py-5 bg-yellow-400 text-white rounded-xl font-black uppercase tracking-widest hover:bg-yellow-500 transition-all shadow-xl">
                                     En savoir plus (Bonus)
                                 </button>
                             </div>
@@ -434,18 +457,18 @@ const isIndiceUnlocked = (indiceId) => {
                             <div class="space-y-4">
                                 <div v-for="(indice, index) in enigme.indices" :key="indice.id" class="relative">
                                     <!-- Indice Débloqué -->
-                                    <div v-if="isIndiceUnlocked(indice.id)" class="p-6 bg-slate-100 rounded-3xl border border-slate-200 shadow-inner">
+                                    <div v-if="isIndiceUnlocked(indice.id)" class="p-6 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
                                         <p class="text-[#7C3AED] text-xs font-black uppercase tracking-widest mb-2">Indice {{ index + 1 }}</p>
                                         <p class="text-slate-700 italic font-bold text-lg">{{ unlockedIndicesContent[indice.id] || indice.contenu }}</p>
                                     </div>
                                     <!-- Indice Bloqué -->
-                                    <div v-else class="p-6 bg-slate-50 rounded-3xl border border-dashed border-slate-300 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div v-else class="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col md:flex-row items-center justify-between gap-4">
                                         <div>
                                             <p class="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">Indice {{ index + 1 }}</p>
                                             <p class="text-slate-400 font-bold text-sm">Contenu verrouillé</p>
                                         </div>
                                         <button @click="debloquerIndice(indice)"
-                                                class="shrink-0 px-6 py-3 rounded-2xl font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2"
+                                                class="shrink-0 px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2"
                                                 :class="(localUnlockedIndices.length === 0) ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' : 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200'">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                             {{ localUnlockedIndices.length === 0 ? 'Gratuit' : `- ${indice.penalite} XP` }}
@@ -461,11 +484,11 @@ const isIndiceUnlocked = (indiceId) => {
         </div>
 
         <div v-else class="flex flex-col items-center justify-center h-full pt-20 px-6">
-            <div class="bg-black/50 backdrop-blur-md p-10 rounded-3xl border-2 border-white/10 text-center max-w-lg w-full">
+            <div class="bg-black/50 backdrop-blur-md p-10 rounded-2xl border-2 border-white/10 text-center max-w-lg w-full">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-yellow-400 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white mb-4">Aucune quête active</h2>
                 <p class="text-slate-300 text-sm md:text-base font-bold uppercase tracking-widest mb-8">Retournez au menu pour lancer une session</p>
-                <Link :href="route('player.dashboard')" class="inline-block py-4 px-8 bg-gradient-to-b from-yellow-400 to-yellow-600 text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+                <Link :href="route('player.dashboard')" class="inline-block py-4 px-8 bg-gradient-to-b from-yellow-400 to-yellow-600 text-slate-900 rounded-xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
                     Menu Principal
                 </Link>
             </div>
@@ -477,19 +500,19 @@ const isIndiceUnlocked = (indiceId) => {
             <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="closeModal"></div>
 
             <!-- Contenu Modal -->
-            <div class="game-modal-content relative w-full max-w-lg rounded-[3rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
+            <div class="game-modal-content relative w-full max-w-lg rounded-2xl p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
                  :class="{
                      'bg-gradient-to-br from-green-400 to-green-600 border-green-300': modalState.type === 'success',
                      'bg-gradient-to-br from-red-400 to-red-600 border-red-300': modalState.type === 'error',
                      'bg-gradient-to-br from-blue-400 to-blue-600 border-blue-300': modalState.type === 'info'
                  }">
-                <div class="bg-white rounded-[2.8rem] p-8 md:p-10 text-center relative overflow-hidden">
+                <div class="bg-white rounded-xl p-8 md:p-10 text-center relative overflow-hidden">
                     <!-- Décoration fond -->
                     <div class="absolute -right-10 -top-10 w-40 h-40 opacity-10 rounded-full"
                          :class="{'bg-green-500': modalState.type === 'success', 'bg-red-500': modalState.type === 'error', 'bg-blue-500': modalState.type === 'info'}"></div>
 
                     <!-- Icône -->
-                    <div class="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-6 shadow-xl relative z-10"
+                    <div class="w-24 h-24 mx-auto rounded-xl flex items-center justify-center mb-6 shadow-xl relative z-10"
                          :class="{
                              'bg-green-100 text-green-500 rotate-3': modalState.type === 'success',
                              'bg-red-100 text-red-500 -rotate-3': modalState.type === 'error',
@@ -507,20 +530,20 @@ const isIndiceUnlocked = (indiceId) => {
 
                     <p class="text-slate-600 font-bold text-lg mb-8 relative z-10">{{ modalState.message }}</p>
 
-                    <div v-if="modalState.content" class="text-left bg-slate-50 p-6 rounded-2xl mb-8 border border-slate-200 prose prose-sm max-w-none relative z-10 max-h-48 overflow-y-auto">
+                    <div v-if="modalState.content" class="text-left bg-slate-50 p-6 rounded-xl mb-8 border border-slate-200 prose prose-sm max-w-none relative z-10 max-h-48 overflow-y-auto">
                         <div v-html="modalState.content"></div>
                     </div>
 
                     <div v-if="modalState.isChoice" class="flex flex-col sm:flex-row gap-4 relative z-10">
-                        <button @click="faireChoixBonus(false)" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-lg">
+                        <button @click="faireChoixBonus(false)" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-lg">
                             Lieu suivant
                         </button>
-                        <button @click="faireChoixBonus(true)" class="flex-1 py-5 bg-[#7C3AED] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg hover:bg-purple-700 transition-all">
+                        <button @click="faireChoixBonus(true)" class="flex-1 py-5 bg-[#7C3AED] text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-purple-700 transition-all">
                             En savoir plus
                         </button>
                     </div>
                     <button v-else @click="closeModal('reload')"
-                            class="w-full py-5 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10"
+                            class="w-full py-5 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10"
                             :class="{
                                 'bg-green-500 hover:bg-green-600 shadow-green-500/30': modalState.type === 'success',
                                 'bg-red-500 hover:bg-red-600 shadow-red-500/30': modalState.type === 'error',
@@ -529,6 +552,37 @@ const isIndiceUnlocked = (indiceId) => {
                         {{ modalState.type === 'success' ? 'Continuer' : 'Fermer' }}
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal Changer de Lieu -->
+        <div v-if="showChangerLieuModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showChangerLieuModal = false"></div>
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full relative z-10 shadow-2xl border-4 border-purple-500/20">
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 bg-purple-100 text-[#7C3AED] rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </div>
+                    <h3 class="text-3xl font-black italic uppercase text-slate-800 tracking-tighter">Changer de lieu</h3>
+                    <p class="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-1">Vous pouvez suspendre ce lieu pour en explorer un autre</p>
+                </div>
+
+                <div class="space-y-3 mb-6 max-h-60 overflow-y-auto pr-1">
+                    <button v-for="lieu in autres_lieux" :key="lieu.id" @click="changerLieu(lieu.id)" :disabled="loading"
+                            class="w-full flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-100 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all text-left group">
+                        <div>
+                            <span class="block text-lg font-black uppercase text-slate-800 italic group-hover:text-purple-700 transition-colors">{{ lieu.nom }}</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ lieu.adresse }}</span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-hover:text-purple-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </div>
+
+                <button @click="showChangerLieuModal = false" class="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all text-xs">
+                    Fermer
+                </button>
             </div>
         </div>
 

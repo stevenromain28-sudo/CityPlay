@@ -116,6 +116,7 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
         Route::post('/enigme/{enigme}/reponse', [GameplayController::class, 'soumettreReponse'])->name('submit.answer');
         Route::post('/enigme/{enigme}/bonus-choice', [GameplayController::class, 'faireChoixBonus'])->name('bonus.choice');
         Route::post('/enigme/{enigme}/indice/{indice}/unlock', [GameplayController::class, 'debloquerIndice'])->name('unlock.indice');
+        Route::post('/changer-lieu', [PlayerController::class, 'changerLieu'])->name('changer-lieu');
     });
 
     // Placeholder routes for other pages

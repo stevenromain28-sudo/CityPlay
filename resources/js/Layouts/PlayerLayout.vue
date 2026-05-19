@@ -177,7 +177,7 @@ onUnmounted(() => {
                 <!-- Right HUD (Unified Stats & Timer) -->
                 <div class="flex items-center pointer-events-none">
                     <div v-if="activeSession || $page.props.auth.user" 
-                         class="pointer-events-auto flex items-center bg-black/40 backdrop-blur-xl border-2 border-white/10 rounded-[2rem] p-1.5 shadow-2xl transition-all duration-500 hover:border-white/20">
+                         class="pointer-events-auto flex items-center bg-black/40 backdrop-blur-xl border-2 border-white/10 rounded-2xl p-1.5 shadow-2xl transition-all duration-500 hover:border-white/20">
                         
                         <!-- Player Stats -->
                         <div class="flex items-center space-x-3 pl-1 pr-4 py-1">
@@ -198,7 +198,7 @@ onUnmounted(() => {
                         <!-- Global Timer -->
                         <div v-if="activeSession && !isDashboard" 
      class="flex items-center gap-3 px-4 py-1 transition-all duration-300"
-     :class="gameStore.tempsRestant < 300 ? 'text-red-500 animate-pulse' : 'text-blue-400'">
+     :class="gameStore.tempsRestant < 300 ? 'text-red-500 animate-pulse' : 'text-purple-400'">
     
     <button @click="togglePause" class="hover:scale-110 active:scale-95 transition-transform text-white/80 hover:text-white">
         <!-- Utilisation du statut de session de Pinia -->
@@ -227,7 +227,7 @@ onUnmounted(() => {
         <!-- Time Up Modal -->
         <div v-if="showTimeUpModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-md"></div>
-            <div class="bg-white rounded-[3rem] p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/30">
+            <div class="bg-white rounded-2xl p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/30">
                 <div class="w-24 h-24 bg-yellow-100 text-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
@@ -248,15 +248,15 @@ onUnmounted(() => {
         <!-- Pause Modal -->
         <div v-if="showPauseModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-md"></div>
-            <div class="bg-white rounded-[3rem] p-12 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-blue-500/30">
-                <div class="w-32 h-32 bg-blue-100 text-blue-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner relative">
+            <div class="bg-white rounded-2xl p-12 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-blue-500/30">
+                <div class="w-32 h-32 bg-blue-100 text-blue-500 rounded-xl flex items-center justify-center mx-auto mb-8 shadow-inner relative">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </div>
                 <h3 class="text-5xl font-black italic uppercase text-slate-800 mb-4 tracking-tighter">PAUSE</h3>
                 <p class="text-slate-500 font-bold mb-10 uppercase text-xs tracking-[0.2em]">Le temps est suspendu...</p>
                 
-                <button @click="togglePause" class="group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
-                    <div class="relative w-full rounded-[1.9rem] bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-6 flex items-center justify-center border-t border-yellow-200">
+                <button @click="togglePause" class="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
+                    <div class="relative w-full rounded-xl bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-6 flex items-center justify-center border-t border-yellow-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mr-4 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         <span class="text-4xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Reprendre la play</span>
                     </div>
@@ -267,7 +267,7 @@ onUnmounted(() => {
         <!-- Logout Confirmation Modal -->
         <div v-if="showLogoutModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="cancelLogout"></div>
-            <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full relative z-10 text-center shadow-2xl border-4 border-red-500/20">
+            <div class="bg-white rounded-2xl p-8 max-w-sm w-full relative z-10 text-center shadow-2xl border-4 border-red-500/20">
                 <div class="w-20 h-20 bg-red-100 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </div>

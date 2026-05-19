@@ -262,36 +262,32 @@ class PlayerController extends Controller
             }
         }
 
-        // 3. Si pas d'énigme : trouver le prochain lieu non complété et rediriger vers lieu.dashboard !
-        if (!$enigme) {
-            // 1. Déterminer quels lieux ont déjà été complétés par le joueur/équipe
-            $lieuxDejaCompletes = collect();
-            
-            if ($equipe) {
-                // Lieux déjà visités par l'équipe : tous les lieux où AU MOINS UNE énigme non-bonus a été résolue
-                $lieuxDejaCompletes = Lieu::where('ville_id', $session->ville_id)
-                    ->whereHas('enigmes', function ($q) use ($equipe) {
-                        $q->where('is_bonus', false)
-                          ->whereHas('tentatives', function ($q2) use ($equipe) {
-                              $q2->whereHas('user', function ($q3) use ($equipe) {
-                                  $q3->where('equipe_id', $equipe->id);
-                              })->where('succes', true);
-                          });
-                    })
-                    ->pluck('id');
-            } else {
-                // Lieux déjà visités par le joueur individuel : tous les lieux où AU MOINS UNE énigme non-bonus a été résolue
-                $lieuxDejaCompletes = Lieu::where('ville_id', $session->ville_id)
-                    ->whereHas('enigmes', function ($q) use ($user) {
-                        $q->where('is_bonus', false)
-                          ->whereHas('tentatives', function ($q2) use ($user) {
-                              $q2->where('user_id', $user->id)->where('succes', true);
-                          });
-                    })
-                    ->pluck('id');
-            }
+        // 3. Déterminer quels lieux ont déjà été complétés par le joueur/équipe (indispensable pour la suite et pour les autres lieux)
+        $lieuxDejaCompletes = collect();
+        if ($equipe) {
+            $lieuxDejaCompletes = Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($equipe) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($equipe) {
+                          $q2->whereHas('user', function ($q3) use ($equipe) {
+                              $q3->where('equipe_id', $equipe->id);
+                          })->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        } else {
+            $lieuxDejaCompletes = Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($user) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($user) {
+                          $q2->where('user_id', $user->id)->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        }
 
-            // 2. Chercher le prochain lieu non complété
+        // 4. Si pas d'énigme : trouver le prochain lieu non complété et rediriger vers lieu.dashboard !
+        if (!$enigme) {
             $lieuProche = Lieu::where('ville_id', $session->ville_id)
                 ->whereNotIn('id', $lieuxDejaCompletes)
                 ->first();
@@ -370,12 +366,46 @@ class PlayerController extends Controller
             }
         }
 
+        // Récupérer les autres lieux non complétés pour pouvoir passer de l'un à l'autre
+        $autresLieux = [];
+        if ($enigme) {
+            $autresLieux = Lieu::where('ville_id', $session->ville_id)
+                ->whereNotIn('id', $lieuxDejaCompletes)
+                ->where('id', '!=', $enigme->lieu_id)
+                ->get();
+        }
+
         return Inertia::render('Player/Jeu', [
             'session' => $session->load('ville'),
             'enigme' => $enigme,
             'indices_debloques' => $indicesDebloquesIds,
             'joueur_score' => $joueurScore,
             'progression' => $progression,
+            'autres_lieux' => $autresLieux,
+        ]);
+    }
+
+    public function changerLieu(Request $request, SessionJeu $session)
+    {
+        $request->validate([
+            'lieu_id' => 'required|exists:lieux,id',
+        ]);
+
+        // Trouver la première énigme non bonus de ce nouveau lieu
+        $nouvelleEnigme = Enigme::where('lieu_id', $request->lieu_id)
+            ->where('is_bonus', false)
+            ->orderBy('ordre')
+            ->first();
+
+        if ($nouvelleEnigme) {
+            $session->update(['current_enigme_id' => $nouvelleEnigme->id]);
+        } else {
+            $session->update(['current_enigme_id' => null]);
+        }
+
+        return redirect()->route('player.lieu.dashboard', [
+            'ville' => $session->ville_id,
+            'lieu' => $request->lieu_id
         ]);
     }
 
