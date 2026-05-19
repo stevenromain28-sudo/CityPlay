@@ -618,4 +618,45 @@ class PlayerController extends Controller
         return redirect()->route('player.game.jeu', $session)
             ->with('success', "Bienvenue dans l'aventure à {$ville->nom} !");
     }
+
+    /**
+     * Historique des lieux complétés avec leur contenu culturel.
+     */
+    public function historiqueCulturel()
+    {
+        $user = auth()->user();
+        $equipe = $user->equipe;
+
+        // 1. Récupérer les IDs des lieux complétés (au moins 1 énigme non-bonus résolue)
+        $lieuxCompletesIds = collect();
+        
+        if ($equipe) {
+            // Pour équipe
+            $lieuxCompletesIds = Lieu::whereHas('enigmes', function ($q) use ($equipe) {
+                $q->where('is_bonus', false)
+                  ->whereHas('tentatives', function ($q2) use ($equipe) {
+                      $q2->whereHas('user', function ($q3) use ($equipe) {
+                          $q3->where('equipe_id', $equipe->id);
+                      })->where('succes', true);
+                  });
+            })->pluck('id');
+        } else {
+            // Pour joueur solo
+            $lieuxCompletesIds = Lieu::whereHas('enigmes', function ($q) use ($user) {
+                $q->where('is_bonus', false)
+                  ->whereHas('tentatives', function ($q2) use ($user) {
+                      $q2->where('user_id', $user->id)->where('succes', true);
+                  });
+            })->pluck('id');
+        }
+
+        // 2. Récupérer ces lieux avec leur contenu culturel et leur ville
+        $lieuxCompletes = Lieu::whereIn('id', $lieuxCompletesIds)
+            ->with(['contenuCulturel', 'ville'])
+            ->get();
+
+        return Inertia::render('Player/HistoriqueCulturel', [
+            'lieux_completes' => $lieuxCompletes,
+        ]);
+    }
 }

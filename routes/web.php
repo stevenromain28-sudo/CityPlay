@@ -122,6 +122,7 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::get('/map', [PlayerController::class, 'map'])->name('map');
     Route::get('/enigme', [PlayerController::class, 'enigmes'])->name('enigme');
     Route::get('/leaderboard', [PlayerController::class, 'leaderboard'])->name('leaderboard');
+    Route::get('/historique-culturel', [PlayerController::class, 'historiqueCulturel'])->name('historique-culturel');
     Route::get('/invitation', function () { return Inertia::render('Player/Invitation'); })->name('invitation');
     Route::get('/websocket', [PlayerController::class, 'websocket'])->name('websocket');
 });

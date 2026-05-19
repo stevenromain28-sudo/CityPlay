@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia; 
 use App\Models\Enigme;
 use App\Models\SessionJeu;
 use App\Models\TentativeEnigme;

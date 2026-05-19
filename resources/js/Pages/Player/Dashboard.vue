@@ -269,6 +269,13 @@ const creerInvitation = () => {
                         </div>
                     </Link>
 
+                    <!-- Bouton HISTORIQUE CULTUREL -->
+                    <Link :href="route('player.historique-culturel')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
+                            <span class="text-2xl md:text-3xl font-black italic uppercase text-white drop-shadow-md tracking-widest">Historique Culturel</span>
+                        </div>
+                    </Link>
+
                     <!-- Bouton STATISTIQUES -->
                     <Link :href="route('player.leaderboard')" class="menu-btn group relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-blue-400 to-blue-600 p-[2px] shadow-lg hover:scale-105 active:scale-95 transition-transform">
                         <div class="relative w-full rounded-[1.4rem] bg-gradient-to-b from-[#7C3AED] to-purple-800 px-6 py-4 flex items-center justify-center border-t border-purple-400">
