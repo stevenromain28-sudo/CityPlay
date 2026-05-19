@@ -18,11 +18,27 @@ class GameplayController extends Controller
 {
     protected $gpsService;
     protected $scoreService;
+    protected $sessionJeuService;
 
-    public function __construct(GPSService $gpsService, ScoreService $scoreService)
+    public function __construct(GPSService $gpsService, ScoreService $scoreService, \App\Services\SessionJeuService $sessionJeuService)
     {
         $this->gpsService = $gpsService;
         $this->scoreService = $scoreService;
+        $this->sessionJeuService = $sessionJeuService;
+    }
+
+    /**
+     * Commencer une session en attente.
+     */
+    public function commencerSession(Request $request, SessionJeu $session)
+    {
+        $user = $request->user();
+
+        if ($session->statut === 'en_attente') {
+            $this->sessionJeuService->commencerSession($session);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -344,11 +360,19 @@ class GameplayController extends Controller
                 $session->update(['current_enigme_id' => $nextBonus->id]);
             }
 
+            if ($request->inertia()) {
+                return redirect()->back()->with('success', 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.');
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.',
                 'bonus_enigmes' => $bonusEnigmes
             ]);
+        }
+
+        if ($request->inertia()) {
+            return redirect()->route('player.dashboard')->with('success', 'En route pour le prochain lieu !');
         }
 
         return response()->json([

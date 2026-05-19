@@ -100,10 +100,13 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::resource('sessions', SessionJeuController::class);
     Route::post('/sessions/{session}/start', [SessionJeuController::class, 'start'])->name('sessions.start');
     Route::post('/sessions/{session}/status', [SessionJeuController::class, 'updateStatus'])->name('sessions.status');
+    Route::post('/sessions/{session}/heartbeat', [SessionJeuController::class, 'heartbeat'])->name('sessions.heartbeat');
+    Route::post('/sessions/{session}/add-time', [SessionJeuController::class, 'addTime'])->name('sessions.add-time');
 
     // Gameplay
     Route::prefix('game/{session}')->name('game.')->group(function () {
         Route::get('/', [PlayerController::class, 'jeu'])->name('jeu');
+        Route::post('/start', [GameplayController::class, 'commencerSession'])->name('start');
         Route::get('/lieu/{lieu}', [PlayerController::class, 'lieuDashboard'])->name('game.lieu.dashboard');
         Route::post('/enigme/{enigme}/gps', [GameplayController::class, 'validerGPS'])->name('validate.gps');
         Route::post('/enigme/{enigme}/reponse', [GameplayController::class, 'soumettreReponse'])->name('submit.answer');

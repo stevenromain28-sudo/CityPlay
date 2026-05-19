@@ -1,7 +1,7 @@
 <script setup>
 import PlayerLayout from '@/Layouts/PlayerLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { onMounted, computed } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { onMounted, computed, ref } from 'vue';
 import gsap from 'gsap';
 
 const props = defineProps({
@@ -15,6 +15,8 @@ const props = defineProps({
     equipe: Object,
 });
 
+const page = usePage();
+const activeSession = computed(() => page.props.active_session);
 const mainEnigmes = computed(() => props.enigmes.filter(e => !e.is_bonus));
 
 const scrollToChallenges = () => {
@@ -25,10 +27,33 @@ const scrollToChallenges = () => {
 };
 
 const jouerEnigme = (enigme) => {
-    router.post(route('player.sessions.store'), {
+    console.log('=== jouerEnigme ===');
+    console.log('activeSession.value:', activeSession.value);
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const lat = urlParams.get('lat');
+    const lng = urlParams.get('lng');
+
+    // Si une session existe déjà : rediriger directement vers la session !
+    if (activeSession.value) {
+        console.log('→ Rediriger vers session existante:', activeSession.value.id);
+        const url = route('player.game.jeu', {
+            session: activeSession.value.id,
+            lat: lat,
+            lng: lng
+        });
+        console.log('→ URL:', url);
+        window.location.href = url; // Forcer un refresh complet
+        return;
+    }
+
+    // Sinon : créer une nouvelle session
+    console.log('→ Créer nouvelle session');
+    router.post(route('player.game.auto-start'), {
         ville_id: props.ville.id,
-        mode: 'cooperatif',
-        enigme_id: enigme.id // Passer l'ID de l'énigme choisie
+        lat: lat,
+        lng: lng,
+        duree: 45
     });
 };
 
@@ -65,8 +90,8 @@ onMounted(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                     Lieu déjà visité
                 </button>
-                <button v-else @click="mainEnigmes.length === 1 ? jouerEnigme(mainEnigmes[0]) : scrollToChallenges()" 
-                        v-if="mainEnigmes.length > 0"
+                <button v-else-if="mainEnigmes.length > 0" 
+                        @click="mainEnigmes.length === 1 ? jouerEnigme(mainEnigmes[0]) : scrollToChallenges()"
                         class="px-12 py-6 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-[2.5rem] font-black text-2xl uppercase tracking-widest shadow-[0_20px_40px_-10px_rgba(234,179,8,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     {{ mainEnigmes.length === 1 ? 'Commencer l\'Aventure' : 'Choisir un Défi ci-dessous' }}
@@ -109,8 +134,8 @@ onMounted(() => {
                     <h4 class="text-xl font-black italic uppercase text-slate-400 tracking-widest">Choisissez votre défi</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="enigme in mainEnigmes" :key="enigme.id" 
-     @click="jouerEnigme(enigme)"
-     class="enigme-card group bg-white p-8 rounded-[2rem] border-4 border-[#7C3AED]/20 hover:border-[#7C3AED] transition-all cursor-pointer relative overflow-hidden shadow-xl min-h-[250px] flex flex-col justify-between">
+                             @click="jouerEnigme(enigme)"
+                             class="enigme-card group bg-white p-8 rounded-[2rem] border-4 border-[#7C3AED]/20 hover:border-[#7C3AED] transition-all cursor-pointer relative overflow-hidden shadow-xl min-h-[250px] flex flex-col justify-between">
     
     <div class="absolute top-0 right-0 w-24 h-24 bg-[#7C3AED]/10 rounded-bl-[3rem] -mr-8 -mt-8"></div>
     
@@ -149,6 +174,7 @@ onMounted(() => {
                 </div>
             </div>
         </div>
+
     </PlayerLayout>
 </template>
 
