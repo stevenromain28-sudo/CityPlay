@@ -92,6 +92,8 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::resource('sessions', SessionJeuController::class);
     Route::post('/sessions/{session}/start', [SessionJeuController::class, 'start'])->name('sessions.start');
     Route::post('/sessions/{session}/status', [SessionJeuController::class, 'updateStatus'])->name('sessions.status');
+    Route::post('/sessions/{session}/heartbeat', [SessionJeuController::class, 'heartbeat'])->name('sessions.heartbeat');
+    Route::post('/sessions/{session}/add-time', [SessionJeuController::class, 'addTime'])->name('sessions.add-time');
 
     // Gameplay
     Route::prefix('game/{session}')->name('game.')->group(function () {

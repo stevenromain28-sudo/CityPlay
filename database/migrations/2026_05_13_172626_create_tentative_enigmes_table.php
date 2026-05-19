@@ -40,6 +40,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('tentative_enigmes');
+        Schema::dropIfExists('tentatives_enigmes');
     }
 };

@@ -239,11 +239,19 @@ class GameplayController extends Controller
                 $session->update(['current_enigme_id' => $nextBonus->id]);
             }
 
+            if ($request->inertia()) {
+                return redirect()->back()->with('success', 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.');
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.',
                 'bonus_enigmes' => $bonusEnigmes
             ]);
+        }
+
+        if ($request->inertia()) {
+            return redirect()->route('player.dashboard')->with('success', 'En route pour le prochain lieu !');
         }
 
         return response()->json([

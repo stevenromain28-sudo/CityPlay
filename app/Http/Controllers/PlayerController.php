@@ -8,19 +8,22 @@ use App\Models\Enigme;
 use App\Models\SessionJeu;
 use App\Models\JoueurSession;
 use App\Models\TentativeEnigme;
+use App\Models\ProgressionEnigme;
+use App\Models\IndiceDebloque;
 use App\Services\CityService;
 use App\Services\SessionJeuService;
-use App\Models\ProgressionEnigme;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
 class PlayerController extends Controller
 {
     protected $cityService;
+    protected $sessionService;
 
-    public function __construct(CityService $cityService)
+    public function __construct(CityService $cityService, SessionJeuService $sessionService)
     {
         $this->cityService = $cityService;
+        $this->sessionService = $sessionService;
     }
 
     public function dashboard(Request $request)
@@ -88,6 +91,9 @@ class PlayerController extends Controller
         $user = auth()->user();
         $lat = (float) $request->query('lat');
         $lng = (float) $request->query('lng');
+
+        // Synchroniser le temps avant de charger la page
+        $this->sessionService->calculerTempsRestant($session);
         
         $enigme = null;
 
@@ -164,12 +170,12 @@ class PlayerController extends Controller
         $progression = null;
 
         if ($enigme) {
-            $indicesDebloquesIds = \App\Models\IndiceDebloque::where('user_id', $user->id)
+            $indicesDebloquesIds = IndiceDebloque::where('user_id', $user->id)
                 ->where('session_jeu_id', $session->id)
                 ->pluck('indice_id')
                 ->toArray();
 
-            $joueurSession = \App\Models\JoueurSession::where('user_id', $user->id)
+            $joueurSession = JoueurSession::where('user_id', $user->id)
                 ->where('session_jeu_id', $session->id)
                 ->first();
             
@@ -282,7 +288,7 @@ class PlayerController extends Controller
         // 1. Chercher une session active pour cet utilisateur (dans la ville si spécifiée, sinon n'importe où)
         $query = SessionJeu::whereHas('joueurs', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->whereIn('statut', ['actif', 'en_attente', 'pause']);
+        })->whereIn('statut', ['actif', 'en_attente', 'pause', 'temps_epuise']);
 
         if ($villeId) {
             $query->where('ville_id', $villeId);
@@ -292,11 +298,10 @@ class PlayerController extends Controller
 
         // 2. Si une session existe, on la reprend
         if ($session) {
-            if ($session->statut === 'en_attente' || $session->statut === 'pause') {
+            if ($session->statut === 'en_attente') {
+                $sessionService->commencerSession($session);
+            } elseif ($session->statut === 'pause' || $session->statut === 'temps_epuise') {
                 $sessionService->reprendreSession($session);
-                if ($session->statut === 'en_attente') {
-                    $sessionService->commencerSession($session);
-                }
             }
             return redirect()->route('player.game.jeu', ['session' => $session->id, 'lat' => $lat, 'lng' => $lng]);
         }
@@ -305,10 +310,10 @@ class PlayerController extends Controller
         if ($villeId) {
             $session = $sessionService->creerSession($user, [
                 'ville_id' => $villeId,
-                'mode' => 'cooperatif' // Par défaut
+                'mode' => 'cooperatif', // Mode par défaut pour l'auto-start
+                'duree' => $request->input('duree', 45), // Utiliser la durée choisie ou 45 par défaut
             ]);
             $sessionService->commencerSession($session);
-            
             return redirect()->route('player.game.jeu', ['session' => $session->id, 'lat' => $lat, 'lng' => $lng]);
         }
 

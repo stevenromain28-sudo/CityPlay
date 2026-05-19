@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref , watch} from 'vue';
 import gsap from 'gsap';
 import PlayerLayout from '@/Layouts/PlayerLayout.vue';
 
@@ -14,12 +14,21 @@ const props = defineProps({
 
 const detectant = ref(false);
 const messageErreur = ref(null);
+const showDurationModal = ref(false);
+const duration = ref(45);
+const durationError = ref('');
 
 onMounted(() => {
     if (props.localisation_requise) {
         obtenirLocalisation();
     } else {
         animerMenu();
+    }
+});
+
+watch(duration, (newVal) => {
+    if (newVal >= 45) {
+        durationError.value = '';
     }
 });
 
@@ -71,7 +80,16 @@ const obtenirLocalisation = () => {
     }
 };
 
+const openStartModal = () => {
+    showDurationModal.value = true;
+};
+
 const lancerJeu = () => {
+    if (duration.value < 45) {
+        durationError.value = "La durée minimale est de 45 minutes.";
+        return;
+    }
+
     // Récupérer les coordonnées actuelles depuis l'URL pour les transmettre au backend
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');
@@ -80,7 +98,8 @@ const lancerJeu = () => {
     router.post(route('player.game.auto-start'), {
         ville_id: props.ville_detectee?.id,
         lat: lat,
-        lng: lng
+        lng: lng,
+        duree: duration.value
     });
 };
 </script>
@@ -128,7 +147,7 @@ const lancerJeu = () => {
                 <div class="flex flex-col w-full gap-5">
                     
                     <!-- Bouton JOUER (Principal) -->
-                    <button @click="lancerJeu" class="menu-btn group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
+                    <button @click="openStartModal" class="menu-btn group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
                         <div class="relative w-full rounded-[1.9rem] bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-6 flex items-center justify-center border-t border-yellow-200">
                             <span class="text-4xl md:text-5xl font-black italic uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] tracking-widest group-hover:text-yellow-50 transition-colors">Jouer</span>
                             <div class="absolute inset-0 rounded-[1.9rem] bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
@@ -156,6 +175,40 @@ const lancerJeu = () => {
                         </div>
                     </Link>
 
+                </div>
+            </div>
+
+            <!-- Duration Selection Modal -->
+            <div v-if="showDurationModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showDurationModal = false"></div>
+                <div class="bg-white rounded-[3rem] p-10 max-w-md w-full relative z-10 text-center shadow-2xl border-4 border-yellow-400/20">
+                    <div class="w-24 h-24 bg-yellow-100 text-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    
+                    <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Nouvelle Quête</h3>
+                    <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Combien de temps durera votre aventure ?</p>
+
+                    <div class="space-y-6 mb-10">
+                        <div class="relative">
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest text-left ml-4">Durée de la session (min)</label>
+                            <input type="number" v-model="duration" min="45"
+                                   class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 px-8 text-2xl font-black text-slate-800 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all text-center">
+                            <div class="absolute right-6 top-[55px] text-slate-300 font-black uppercase text-xs italic">min</div>
+                        </div>
+                        
+                        <p v-if="durationError" class="text-red-500 font-black uppercase text-[10px] animate-bounce">{{ durationError }}</p>
+                        <p v-else class="text-slate-400 font-bold text-[10px] uppercase">Minimum requis : 45 minutes</p>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button @click="showDurationModal = false" class="flex-1 py-5 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-md">
+                            Annuler
+                        </button>
+                        <button @click="lancerJeu" class="flex-1 py-5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:scale-105 active:scale-95 transition-all">
+                            Démarrer !
+                        </button>
+                    </div>
                 </div>
             </div>
 

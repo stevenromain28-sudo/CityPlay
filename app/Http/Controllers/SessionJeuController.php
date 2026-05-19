@@ -26,14 +26,36 @@ class SessionJeuController extends Controller
     }
 
     /**
-     * Créer une nouvelle session.
+     * Créer une nouvelle session ou mettre à jour l'existante.
      */
     public function store(SessionJeuRequest $request)
     {
-        $session = $this->sessionService->creerSession(
-            $request->user(),
-            $request->validated()
-        );
+        $user = $request->user();
+        $data = $request->validated();
+
+        // 1. Chercher si une session est déjà active pour ce joueur
+        $existingSession = SessionJeu::whereHas('joueurs', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->whereIn('statut', ['actif', 'en_attente', 'pause', 'temps_epuise'])
+        ->latest()
+        ->first();
+
+        if ($existingSession) {
+            // Mettre à jour l'énigme courante si fournie
+            if (isset($data['enigme_id'])) {
+                $existingSession->update(['current_enigme_id' => $data['enigme_id']]);
+            }
+            
+            // Si elle était en pause ou attente, on la reprend
+            if ($existingSession->statut !== 'actif') {
+                $this->sessionService->reprendreSession($existingSession);
+            }
+
+            return redirect()->route('player.game.jeu', $existingSession);
+        }
+
+        // 2. Sinon créer une nouvelle session
+        $session = $this->sessionService->creerSession($user, $data);
 
         // On commence directement la session pour aller au jeu
         $this->sessionService->commencerSession($session);
@@ -67,7 +89,7 @@ class SessionJeuController extends Controller
     }
 
     /**
-     * Pause / Reprise / Abandon.
+     * Pause / Reprise / Terminer.
      */
     public function updateStatus(Request $request, SessionJeu $session)
     {
@@ -80,11 +102,38 @@ class SessionJeuController extends Controller
             case 'reprendre':
                 $this->sessionService->reprendreSession($session);
                 break;
-            case 'abandonner':
-                $this->sessionService->abandonnerSession($session);
+            case 'terminer':
+                $this->sessionService->terminerSession($session);
                 return redirect()->route('player.dashboard');
         }
 
         return back();
+    }
+
+    /**
+     * Synchroniser le temps restant (Heartbeat).
+     */
+    public function heartbeat(SessionJeu $session)
+    {
+        $tempsRestant = $this->sessionService->calculerTempsRestant($session);
+
+        return response()->json([
+            'temps_restant' => $tempsRestant,
+            'statut' => $session->statut
+        ]);
+    }
+
+    /**
+     * Ajouter du temps supplémentaire.
+     */
+    public function addTime(Request $request, SessionJeu $session)
+    {
+        $request->validate([
+            'minutes' => 'required|integer|min:1'
+        ]);
+
+        $this->sessionService->ajouterTemps($session, $request->minutes);
+
+        return back()->with('success', $request->minutes . ' minutes ajoutées !');
     }
 }

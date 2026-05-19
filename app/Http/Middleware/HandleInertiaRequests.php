@@ -47,7 +47,31 @@ class HandleInertiaRequests extends Middleware
             ],
             'ville' => $this->resolveVille($request),
             'lieu' => $this->resolveLieu($request),
+            'active_session' => $this->resolveActiveSession($request),
         ];
+    }
+
+    protected function resolveActiveSession(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return null;
+
+        $session = \App\Models\SessionJeu::whereHas('joueurs', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })
+        ->whereIn('statut', ['actif', 'pause', 'temps_epuise'])
+        ->with('ville')
+        ->latest('updated_at')
+        ->first();
+
+        // Important : On recalcule le temps restant à chaque requête pour que 
+        // les données partagées par Inertia soient toujours à jour.
+        if ($session && $session->statut === 'actif') {
+            app(\App\Services\SessionJeuService::class)->calculerTempsRestant($session);
+            $session->refresh(); // Rafraîchir l'instance avec les nouvelles valeurs de la DB
+        }
+
+        return $session;
     }
 
     protected function resolveVille(Request $request)
