@@ -74,6 +74,8 @@ Route::middleware(['auth', 'role:admin|super_admin'])->prefix('admin')->name('ad
         Route::post('/users', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
         Route::post('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{user}/approve-admin', [App\Http\Controllers\Admin\UserController::class, 'approveAdmin'])->name('users.approve-admin');
+        Route::post('/users/{user}/reject-admin', [App\Http\Controllers\Admin\UserController::class, 'rejectAdmin'])->name('users.reject-admin');
     });
 });
 
@@ -92,6 +94,7 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     
     // Auto-start game from dashboard
     Route::post('/game/auto-start', [PlayerController::class, 'autoStart'])->name('game.auto-start');
+    Route::get('/join-city/{ville}', [PlayerController::class, 'joinCity'])->name('join-city');
 
     // Invitations
     Route::post('/invitations', [InvitationController::class, 'store'])->name('invitations.store');

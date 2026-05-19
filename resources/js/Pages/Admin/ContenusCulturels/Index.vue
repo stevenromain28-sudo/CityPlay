@@ -67,12 +67,16 @@ const form = useForm({
     lieu_id: null,
     titre: '',
     description: '',
-    audio: null
+    audio: null,
+    images: [],
+    existing_images: []
 });
 
 const openNew = () => {
     form.reset();
     form.id = null;
+    form.images = [];
+    form.existing_images = [];
     selectedFormVille.value = null;
     visible.value = true;
 };
@@ -83,6 +87,8 @@ const editContenu = (contenu) => {
     form.titre = contenu.titre;
     form.description = contenu.description;
     form.audio = null;
+    form.images = [];
+    form.existing_images = contenu.images ? [...contenu.images] : [];
     if (props.isSuperAdmin && contenu.lieu) {
         selectedFormVille.value = contenu.lieu.ville_id;
     }
@@ -118,6 +124,24 @@ const deleteContenu = () => {
 
 const onAudioSelect = (event) => {
     form.audio = event.files[0];
+};
+
+const onImagesSelect = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    form.images = [...form.images, ...selectedFiles];
+    event.target.value = '';
+};
+
+const removeExistingImage = (index) => {
+    form.existing_images.splice(index, 1);
+};
+
+const removeNewImage = (index) => {
+    form.images.splice(index, 1);
+};
+
+const getObjectUrl = (file) => {
+    return URL.createObjectURL(file);
 };
 
 onMounted(() => {
@@ -203,6 +227,16 @@ onMounted(() => {
                             {{ contenu.description }}
                         </p>
 
+                        <!-- Images Preview Grid in Card -->
+                        <div v-if="contenu.images && contenu.images.length > 0" class="grid grid-cols-3 gap-2 mt-6">
+                            <div v-for="(img, idx) in contenu.images.slice(0, 3)" :key="idx" class="h-20 rounded-2xl overflow-hidden relative border border-slate-100 shadow-sm">
+                                <img :src="img" class="w-full h-full object-cover" />
+                                <div v-if="idx === 2 && contenu.images.length > 3" class="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white text-xs font-black italic">
+                                    +{{ contenu.images.length - 3 }}
+                                </div>
+                            </div>
+                        </div>
+
                         <div v-if="contenu.audio" class="mt-8 pt-8 border-t border-slate-50">
                             <audio :src="contenu.audio" controls class="w-full h-8 opacity-50 hover:opacity-100 transition-opacity"></audio>
                         </div>
@@ -260,6 +294,52 @@ onMounted(() => {
                 <div class="space-y-4">
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Fichier Audio (Optionnel)</label>
                     <FileUpload mode="basic" name="audio" accept="audio/*" @select="onAudioSelect" class="w-full" chooseLabel="Ajouter une voix au récit" />
+                </div>
+
+                <!-- Galerie de photos multiples -->
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Photos illustratives (Plusieurs possibles)</label>
+                    
+                    <!-- Galerie existante et nouvelle -->
+                    <div v-if="form.existing_images.length > 0 || form.images.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-3xl border border-slate-100">
+                        
+                        <!-- Images existantes -->
+                        <div v-for="(img, idx) in form.existing_images" :key="'exist-' + idx" class="relative group aspect-video rounded-2xl overflow-hidden border-2 border-white shadow-md">
+                            <img :src="img" class="w-full h-full object-cover" />
+                            <button type="button" @click="removeExistingImage(idx)" class="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-transform hover:scale-110 flex items-center justify-center shadow">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                            <span class="absolute bottom-2 left-2 px-2 py-0.5 bg-blue-500/80 text-white text-[8px] font-bold rounded uppercase tracking-wider">Actuelle</span>
+                        </div>
+
+                        <!-- Nouvelles images -->
+                        <div v-for="(file, idx) in form.images" :key="'new-' + idx" class="relative group aspect-video rounded-2xl overflow-hidden border-2 border-dashed border-blue-300 shadow-md">
+                            <img :src="getObjectUrl(file)" class="w-full h-full object-cover" />
+                            <button type="button" @click="removeNewImage(idx)" class="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-transform hover:scale-110 flex items-center justify-center shadow">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                            <span class="absolute bottom-2 left-2 px-2 py-0.5 bg-green-500/80 text-white text-[8px] font-bold rounded uppercase tracking-wider">Nouvelle</span>
+                        </div>
+
+                    </div>
+
+                    <!-- Input de sélection multiple -->
+                    <div class="relative">
+                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 hover:border-[#1DA1F2] rounded-[2rem] cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-colors p-6 text-center">
+                            <div class="flex flex-col items-center justify-center pt-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#1DA1F2] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="text-xs font-black uppercase text-slate-600 tracking-wider">Sélectionner des photos</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Glisser ou cliquer pour ajouter plusieurs images (PNG, JPG, JPEG)</p>
+                            </div>
+                            <input type="file" multiple accept="image/*" @change="onImagesSelect" class="hidden" />
+                        </label>
+                    </div>
                 </div>
 
                 <div class="pt-6 flex space-x-4">

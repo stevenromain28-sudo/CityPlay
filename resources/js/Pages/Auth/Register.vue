@@ -4,11 +4,20 @@ import InputError from '@/Components/InputError.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { onMounted, ref } from 'vue';
 
+const props = defineProps({
+    adminRequest: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const form = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
+    admin_request: props.adminRequest ? 1 : 0,
+    requested_city: '',
 });
 
 const isLoaded = ref(false);
@@ -123,8 +132,14 @@ const submit = () => {
                     <span class="text-yellow-400 drop-shadow-[0_5px_0_rgba(234,179,8,1)]">City</span>Play
                 </div>
                 <h1 class="text-3xl font-black text-slate-800 mt-6 tracking-wide">
-                    Sign Up and <br>
-                    <span class="text-blue-600">Play Free</span>
+                    <template v-if="adminRequest">
+                        Demande d'adhésion <br>
+                        <span class="text-blue-600">Administration</span>
+                    </template>
+                    <template v-else>
+                        Sign Up and <br>
+                        <span class="text-blue-600">Play Free</span>
+                    </template>
                 </h1>
             </div>
 
@@ -153,6 +168,18 @@ const submit = () => {
                         class="w-full px-6 py-3.5 bg-white border-2 border-slate-300 rounded-full text-slate-700 font-bold placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 text-base"
                     />
                     <InputError class="mt-1 px-4 text-xs font-bold text-red-500" :message="form.errors.email" />
+                </div>
+
+                <div v-if="adminRequest">
+                    <input
+                        id="requested_city"
+                        type="text"
+                        v-model="form.requested_city"
+                        required
+                        placeholder="Ville à gérer"
+                        class="w-full px-6 py-3.5 bg-white border-2 border-slate-300 rounded-full text-slate-700 font-bold placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 text-base"
+                    />
+                    <InputError class="mt-1 px-4 text-xs font-bold text-red-500" :message="form.errors.requested_city" />
                 </div>
 
                 <div>
@@ -186,7 +213,7 @@ const submit = () => {
                         class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xl rounded-full border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1 active:shadow-none shadow-md transition-all duration-100 uppercase tracking-wide"
                         :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                     >
-                        CREATE AN ACCOUNT
+                        {{ adminRequest ? 'SOUMETTRE LA DEMANDE' : 'CREATE AN ACCOUNT' }}
                     </button>
                 </div>
 

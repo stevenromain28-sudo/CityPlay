@@ -481,7 +481,7 @@ onMounted(() => {
                         </div>
 
                         <div class="flex flex-col sm:flex-row gap-4">
-                            <Link :href="route('login')" class="px-8 py-4 bg-[#1DA1F2] hover:bg-[#1DA1F2]/90 text-white text-center font-black uppercase tracking-wider rounded-[1.5rem] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/25">
+                            <Link :href="route('register', { admin_request: 1 })" class="px-8 py-4 bg-[#1DA1F2] hover:bg-[#1DA1F2]/90 text-white text-center font-black uppercase tracking-wider rounded-[1.5rem] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/25">
                                 Rejoindre l'administration
                             </Link>
                         </div>

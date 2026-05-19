@@ -12,7 +12,12 @@ class ContenuCulturel extends Model
         'lieu_id',
         'titre',
         'description',
-        'audio'
+        'audio',
+        'images',
+    ];
+
+    protected $casts = [
+        'images' => 'array',
     ];
 
     public function lieu()

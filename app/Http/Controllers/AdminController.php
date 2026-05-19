@@ -27,6 +27,7 @@ class AdminController extends Controller
                     'sessions_count' => SessionJeu::count(),
                 ],
                 'ma_ville' => null,
+                'villes' => Ville::where('actif', true)->orderBy('nom')->get(),
                 'recent_lieux' => Lieu::latest()->take(4)->get(),
             ]);
         }
@@ -45,6 +46,7 @@ class AdminController extends Controller
                 'sessions_count' => SessionJeu::count(),
             ],
             'ma_ville' => $maVille,
+            'villes' => [],
             'recent_lieux' => $maVille 
                 ? Lieu::where('ville_id', $maVille->id)->latest()->take(4)->get() 
                 : [],
