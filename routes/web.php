@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\SessionJeuController;
 use App\Http\Controllers\GameplayController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Admin\VilleController;
 use App\Http\Controllers\Admin\LieuController;
 use App\Http\Controllers\Admin\EnigmeController;
@@ -34,6 +35,10 @@ Route::get('/dashboard', function () {
     }
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Invitation Routes (accessible sans auth pour l'affichage, mais acceptation nécessite auth)
+Route::get('/invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+Route::post('/invitation/{token}/accept', [InvitationController::class, 'accept'])->middleware('auth')->name('invitation.accept');
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin|super_admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -91,15 +96,22 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::post('/game/auto-start', [PlayerController::class, 'autoStart'])->name('game.auto-start');
     Route::get('/join-city/{ville}', [PlayerController::class, 'joinCity'])->name('join-city');
 
+    // Invitations
+    Route::post('/invitations', [InvitationController::class, 'store'])->name('invitations.store');
+
     // Sessions de jeu
     Route::resource('sessions', SessionJeuController::class);
     Route::post('/sessions/{session}/start', [SessionJeuController::class, 'start'])->name('sessions.start');
     Route::post('/sessions/{session}/status', [SessionJeuController::class, 'updateStatus'])->name('sessions.status');
+    Route::post('/sessions/{session}/heartbeat', [SessionJeuController::class, 'heartbeat'])->name('sessions.heartbeat');
+    Route::post('/sessions/{session}/add-time', [SessionJeuController::class, 'addTime'])->name('sessions.add-time');
 
     // Gameplay
     Route::prefix('game/{session}')->name('game.')->group(function () {
         Route::get('/', [PlayerController::class, 'jeu'])->name('jeu');
+        Route::post('/start', [GameplayController::class, 'commencerSession'])->name('start');
         Route::get('/lieu/{lieu}', [PlayerController::class, 'lieuDashboard'])->name('game.lieu.dashboard');
+        Route::get('/choisir-enigme/{enigme}', [PlayerController::class, 'choisirEnigme'])->name('choisir-enigme');
         Route::post('/enigme/{enigme}/gps', [GameplayController::class, 'validerGPS'])->name('validate.gps');
         Route::post('/enigme/{enigme}/reponse', [GameplayController::class, 'soumettreReponse'])->name('submit.answer');
         Route::post('/enigme/{enigme}/bonus-choice', [GameplayController::class, 'faireChoixBonus'])->name('bonus.choice');
@@ -110,6 +122,7 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::get('/map', [PlayerController::class, 'map'])->name('map');
     Route::get('/enigme', [PlayerController::class, 'enigmes'])->name('enigme');
     Route::get('/leaderboard', [PlayerController::class, 'leaderboard'])->name('leaderboard');
+    Route::get('/historique-culturel', [PlayerController::class, 'historiqueCulturel'])->name('historique-culturel');
     Route::get('/invitation', function () { return Inertia::render('Player/Invitation'); })->name('invitation');
     Route::get('/websocket', [PlayerController::class, 'websocket'])->name('websocket');
 });

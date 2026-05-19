@@ -6,36 +6,45 @@ export const useGameStore = defineStore('game', () => {
     const session = ref(null);
     const enigmeActive = ref(null);
     const joueursConnectes = ref([]);
-    const tempsEcoule = ref(0);
+    const tempsRestant = ref(0); // On stocke les secondes ici
     const timerInterval = ref(null);
 
     // Getters
     const estEnJeu = computed(() => !!session.value && session.value.statut === 'actif');
-    const progressionPourcentage = computed(() => {
-        if (!session.value || !session.value.total_enigmes) return 0;
-        return (session.value.progression / session.value.total_enigmes) * 100;
+    const formatTemps = computed(() => {
+        const secondes = tempsRestant.value;
+        const h = Math.floor(secondes / 3600);
+        const m = Math.floor((secondes % 3600) / 60);
+        const s = secondes % 60;
+        return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     });
 
     // Actions
     function setSession(newSession) {
         session.value = newSession;
+        
+        // Synchronisation du temps restant (uniquement si dérive importante > 2s ou premier chargement)
+        if (!timerInterval.value || Math.abs(tempsRestant.value - newSession.temps_restant) > 2) {
+            tempsRestant.value = newSession.temps_restant;
+        }
+
         if (newSession.statut === 'actif') {
             startTimer();
+        } else {
+            stopTimer();
         }
     }
 
-    function setEnigmeActive(enigme) {
-        enigmeActive.value = enigme;
-    }
-
-    function updateJoueurs(joueurs) {
-        joueursConnectes.value = joueurs;
-    }
-
     function startTimer() {
-        if (timerInterval.value) return;
+        if (timerInterval.value) return; // Évite les doublons
+        
         timerInterval.value = setInterval(() => {
-            tempsEcoule.value++;
+            if (tempsRestant.value > 0) {
+                tempsRestant.value--;
+            } else {
+                session.value.statut = 'temps_epuise';
+                stopTimer();
+            }
         }, 1000);
     }
 
@@ -46,26 +55,20 @@ export const useGameStore = defineStore('game', () => {
         }
     }
 
-    function resetGame() {
-        session.value = null;
-        enigmeActive.value = null;
-        joueursConnectes.value = [];
-        tempsEcoule.value = 0;
-        stopTimer();
+    function syncTempsForce(serverSeconds) {
+        tempsRestant.value = serverSeconds;
     }
 
     return {
         session,
         enigmeActive,
         joueursConnectes,
-        tempsEcoule,
+        tempsRestant,
         estEnJeu,
-        progressionPourcentage,
+        formatTemps,
         setSession,
-        setEnigmeActive,
-        updateJoueurs,
         startTimer,
         stopTimer,
-        resetGame
+        syncTempsForce
     };
 });

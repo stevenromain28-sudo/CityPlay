@@ -22,6 +22,7 @@ class SessionJeuRequest extends FormRequest
         return [
             'ville_id' => 'required|exists:villes,id',
             'mode' => 'required|in:cooperatif,mercenaire',
+            'duree' => 'required|integer|min:45',
             'enigme_id' => 'nullable|exists:enigmes,id',
             'difficulte' => 'nullable|integer|min:1|max:3',
             'moyen_locomotion' => 'nullable|string',
@@ -37,6 +38,8 @@ class SessionJeuRequest extends FormRequest
             'ville_id.required' => 'Veuillez choisir une ville pour votre aventure.',
             'mode.required' => 'Le mode de jeu est obligatoire.',
             'mode.in' => 'Le mode de jeu sélectionné est invalide.',
+            'duree.required' => 'La durée de la partie est obligatoire.',
+            'duree.min' => 'La durée minimale d\'une partie est de 45 minutes.',
         ];
     }
 }

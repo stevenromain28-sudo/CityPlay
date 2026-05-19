@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia; 
 use App\Models\Enigme;
 use App\Models\SessionJeu;
 use App\Models\TentativeEnigme;
@@ -18,11 +19,27 @@ class GameplayController extends Controller
 {
     protected $gpsService;
     protected $scoreService;
+    protected $sessionJeuService;
 
-    public function __construct(GPSService $gpsService, ScoreService $scoreService)
+    public function __construct(GPSService $gpsService, ScoreService $scoreService, \App\Services\SessionJeuService $sessionJeuService)
     {
         $this->gpsService = $gpsService;
         $this->scoreService = $scoreService;
+        $this->sessionJeuService = $sessionJeuService;
+    }
+
+    /**
+     * Commencer une session en attente.
+     */
+    public function commencerSession(Request $request, SessionJeu $session)
+    {
+        $user = $request->user();
+
+        if ($session->statut === 'en_attente') {
+            $this->sessionJeuService->commencerSession($session);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -119,6 +136,36 @@ class GameplayController extends Controller
     {
         $progression->update(['text_validated_at' => now()]);
 
+        // Si l'utilisateur est dans une équipe, partager la progression avec toute l'équipe
+        $equipe = $user->equipe;
+        if ($equipe) {
+            // Créer/mettre à jour la progression pour l'équipe
+            ProgressionEnigme::firstOrCreate(
+                [
+                    'equipe_id' => $equipe->id,
+                    'session_jeu_id' => $session->id,
+                    'enigme_id' => $enigme->id,
+                ],
+                ['user_id' => $user->id]
+            )->update(['text_validated_at' => now()]);
+
+            // Pour chaque membre de l'équipe, créer sa propre progression si elle n'existe pas
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $progressionMembre = ProgressionEnigme::firstOrCreate(
+                        [
+                            'session_jeu_id' => $session->id,
+                            'user_id' => $membre->id,
+                            'enigme_id' => $enigme->id,
+                        ]
+                    );
+                    if (!$progressionMembre->text_validated_at) {
+                        $progressionMembre->update(['text_validated_at' => now()]);
+                    }
+                }
+            }
+        }
+
         // Si c'est une énigme bonus, on donne direct les points bonus et on finit
         if ($enigme->is_bonus) {
             $scoreGagne = $this->scoreService->calculerBonus($enigme);
@@ -129,6 +176,21 @@ class GameplayController extends Controller
             
             if ($joueurSession) {
                 $joueurSession->increment('score', $scoreGagne);
+            }
+
+            // Si en équipe, partager les points avec l'équipe
+            if ($equipe) {
+                $equipe->increment('score_total', $scoreGagne);
+                foreach ($equipe->membres as $membre) {
+                    if ($membre->id !== $user->id) {
+                        $jsMembre = JoueurSession::where('session_jeu_id', $session->id)
+                            ->where('user_id', $membre->id)
+                            ->first();
+                        if ($jsMembre) {
+                            $jsMembre->increment('score', $scoreGagne);
+                        }
+                    }
+                }
             }
 
             // Enregistrer la tentative réussie pour le bonus
@@ -143,7 +205,8 @@ class GameplayController extends Controller
                 'success' => true,
                 'message' => 'Bonus validé ! +' . $scoreGagne . ' XP',
                 'is_bonus' => true,
-                'score_gagne' => $scoreGagne
+                'score_gagne' => $scoreGagne,
+                'equipe' => $equipe
             ]);
         }
 
@@ -158,6 +221,21 @@ class GameplayController extends Controller
             $joueurSession->increment('score', $scoreGagne);
         }
 
+        // Si en équipe, partager les points avec l'équipe
+        if ($equipe) {
+            $equipe->increment('score_total', $scoreGagne);
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $jsMembre = JoueurSession::where('session_jeu_id', $session->id)
+                        ->where('user_id', $membre->id)
+                        ->first();
+                    if ($jsMembre) {
+                        $jsMembre->increment('score', $scoreGagne);
+                    }
+                }
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Mystère résolu ! Le lieu est révélé. Maintenant, rendez-vous sur place !',
@@ -166,13 +244,40 @@ class GameplayController extends Controller
             'lieu' => [
                 'nom' => $enigme->lieu->nom,
                 'image' => $enigme->lieu->image ?? $enigme->image
-            ]
+            ],
+            'equipe' => $equipe
         ]);
     }
 
     protected function marquerGPSCommeValide(SessionJeu $session, Enigme $enigme, $user, $progression)
     {
         $progression->update(['gps_validated_at' => now()]);
+
+        // Si l'utilisateur est dans une équipe, partager la progression avec toute l'équipe
+        $equipe = $user->equipe;
+        if ($equipe) {
+            // Mettre à jour la progression de l'équipe
+            $progressionEquipe = ProgressionEnigme::where('equipe_id', $equipe->id)
+                ->where('session_jeu_id', $session->id)
+                ->where('enigme_id', $enigme->id)
+                ->first();
+            if ($progressionEquipe) {
+                $progressionEquipe->update(['gps_validated_at' => now()]);
+            }
+
+            // Pour chaque membre de l'équipe, mettre à jour sa progression
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $progressionMembre = ProgressionEnigme::where('session_jeu_id', $session->id)
+                        ->where('user_id', $membre->id)
+                        ->where('enigme_id', $enigme->id)
+                        ->first();
+                    if ($progressionMembre && !$progressionMembre->gps_validated_at) {
+                        $progressionMembre->update(['gps_validated_at' => now()]);
+                    }
+                }
+            }
+        }
 
         // Score partiel (60%)
         $scoreGagne = $this->scoreService->calculerScoreEnigme($enigme, 0, 0, 'gps');
@@ -184,6 +289,22 @@ class GameplayController extends Controller
         if ($joueurSession) {
             $joueurSession->increment('score', $scoreGagne);
             $joueurSession->increment('progression');
+        }
+
+        // Si en équipe, partager les points et la progression avec l'équipe
+        if ($equipe) {
+            $equipe->increment('score_total', $scoreGagne);
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $jsMembre = JoueurSession::where('session_jeu_id', $session->id)
+                        ->where('user_id', $membre->id)
+                        ->first();
+                    if ($jsMembre) {
+                        $jsMembre->increment('score', $scoreGagne);
+                        $jsMembre->increment('progression');
+                    }
+                }
+            }
         }
 
         // On libère l'énigme courante de la session
@@ -203,7 +324,8 @@ class GameplayController extends Controller
             'gps_validated' => true,
             'score_gagne' => $scoreGagne,
             'content' => $enigme->lieu->contenuCulturel,
-            'show_choice' => true
+            'show_choice' => true,
+            'equipe' => $equipe
         ]);
     }
 
@@ -239,6 +361,10 @@ class GameplayController extends Controller
                 $session->update(['current_enigme_id' => $nextBonus->id]);
             }
 
+            if ($request->inertia()) {
+                return redirect()->back()->with('success', 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.');
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Super ! Voici vos énigmes bonus pour mieux connaître ce lieu.',
@@ -246,11 +372,54 @@ class GameplayController extends Controller
             ]);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'En route pour le prochain lieu !',
-            'next_location' => true
-        ]);
+        // Si wants_bonus est false : trouver le prochain lieu non complété et rediriger vers lieu.dashboard !
+        $equipe = $user->equipe;
+        
+        // 1. Déterminer quels lieux ont déjà été complétés
+        $lieuxDejaCompletes = collect();
+        if ($equipe) {
+            $lieuxDejaCompletes = \App\Models\Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($equipe) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($equipe) {
+                          $q2->whereHas('user', function ($q3) use ($equipe) {
+                              $q3->where('equipe_id', $equipe->id);
+                          })->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        } else {
+            $lieuxDejaCompletes = \App\Models\Lieu::where('ville_id', $session->ville_id)
+                ->whereHas('enigmes', function ($q) use ($user) {
+                    $q->where('is_bonus', false)
+                      ->whereHas('tentatives', function ($q2) use ($user) {
+                          $q2->where('user_id', $user->id)->where('succes', true);
+                      });
+                })
+                ->pluck('id');
+        }
+
+        // 2. Chercher le prochain lieu non complété
+        $lieuProche = \App\Models\Lieu::where('ville_id', $session->ville_id)
+            ->whereNotIn('id', $lieuxDejaCompletes)
+            ->first();
+
+        if ($lieuProche) {
+            // Réinitialiser l'énigme courante de la session
+            $session->update(['current_enigme_id' => null]);
+            
+            // Rediriger vers la page LieuDashboard pour choisir l'énigme !
+            return redirect()->route('player.lieu.dashboard', [
+                'ville' => $session->ville_id,
+                'lieu' => $lieuProche->id
+            ]);
+        } else {
+            // Tous les lieux sont complétés : rediriger vers la page dédiée
+            return Inertia::render('Player/TousLieuxVisites', [
+                'session' => $session->load('ville'),
+                'equipe' => $equipe,
+            ]);
+        }
     }
 
     /**
