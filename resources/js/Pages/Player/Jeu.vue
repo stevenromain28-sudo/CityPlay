@@ -1,6 +1,6 @@
 <script setup>
 import PlayerLayout from '@/Layouts/PlayerLayout.vue';
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
+import { onMounted, onUnmounted, ref, computed, watch ,nextTick } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import gsap from 'gsap';
@@ -84,10 +84,14 @@ let map = null;
 let playerMarker = null;
 let targetMarker = null;
 let validationCircle = null;
+let connectionLine = null;
 const watchId = ref(null);
 
 const initGameMap = () => {
     if (!mapContainer.value || !props.enigme.latitude) return;
+
+    const targetLat = parseFloat(props.enigme.latitude);
+    const targetLng = parseFloat(props.enigme.longitude);
 
     if (map) {
         map.remove();
@@ -97,9 +101,10 @@ const initGameMap = () => {
     map = L.map(mapContainer.value, {
         zoomControl: false,
         attributionControl: false
-    }).setView([props.enigme.latitude, props.enigme.longitude], 16);
+    }).setView([targetLat, targetLng], 16);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+    // Utilisation des tuiles OpenStreetMap standard, validées et fonctionnelles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     // Marqueur Cible (Lieu de l'énigme)
     const targetIcon = L.divIcon({
@@ -111,10 +116,10 @@ const initGameMap = () => {
         iconAnchor: [20, 20]
     });
 
-    targetMarker = L.marker([props.enigme.latitude, props.enigme.longitude], { icon: targetIcon }).addTo(map);
+    targetMarker = L.marker([targetLat, targetLng], { icon: targetIcon }).addTo(map);
 
     // Cercle de validation
-    validationCircle = L.circle([props.enigme.latitude, props.enigme.longitude], {
+    validationCircle = L.circle([targetLat, targetLng], {
         radius: props.enigme.rayon || 50,
         color: '#7C3AED',
         fillColor: '#7C3AED',
@@ -126,10 +131,11 @@ const initGameMap = () => {
     // Suivi du joueur
     if ("geolocation" in navigator) {
         watchId.value = navigator.geolocation.watchPosition((position) => {
-            const { latitude, longitude } = position.coords;
-            const playerPos = [latitude, longitude];
+            const playerLat = parseFloat(position.coords.latitude);
+            const playerLng = parseFloat(position.coords.longitude);
+            const playerPos = [playerLat, playerLng];
             
-            console.log("Position joueur récupérée:", latitude, longitude); // Pour debug
+            console.log("Position joueur récupérée:", playerLat, playerLng); // Pour debug
 
             if (!playerMarker) {
                 const playerIcon = L.divIcon({
@@ -145,19 +151,25 @@ const initGameMap = () => {
                 playerMarker.setLatLng(playerPos);
             }
 
-            // Ajuster la vue pour voir les deux marqueurs (seulement si le joueur est à moins de 15km)
-            const distance = map.distance(playerPos, [props.enigme.latitude, props.enigme.longitude]);
-            if (distance < 15000) {
-                const bounds = L.latLngBounds([playerPos, [props.enigme.latitude, props.enigme.longitude]]);
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+            // Dessiner ou mettre à jour la ligne de liaison pointillée entre le joueur et le monument mystère
+            if (connectionLine) {
+                connectionLine.setLatLngs([playerPos, [targetLat, targetLng]]);
             } else {
-                // Si le joueur est trop loin (ex: coordonnées fausses ou test à distance), on reste centré sur l'énigme
-                map.setView([props.enigme.latitude, props.enigme.longitude], 16);
+                connectionLine = L.polyline([playerPos, [targetLat, targetLng]], {
+                    color: '#7C3AED',
+                    weight: 4,
+                    dashArray: '8, 8',
+                    opacity: 0.8
+                }).addTo(map);
             }
+
+            // Ajuster la vue pour voir le joueur et la cible avec la ligne tracée
+            const bounds = L.latLngBounds([playerPos, [targetLat, targetLng]]);
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
         }, (err) => {
             console.error("Erreur GPS:", err);
-            // En cas d'erreur de géolocalisation, on s'assure que la carte reste centrée sur l'énigme
-            map.setView([props.enigme.latitude, props.enigme.longitude], 16);
+            // En cas d'erreur de géolocalisation, la carte reste au moins sur le monument cible
+            map.setView([targetLat, targetLng], 16);
         }, {
             enableHighAccuracy: true,
             maximumAge: 10000,
@@ -173,13 +185,25 @@ const initGameMap = () => {
 };
 
 // Observer les changements pour initialiser la carte quand on arrive à l'étape GPS
-watch(isTextValidated, (newVal) => {
-    if (newVal && !isGpsValidated.value) {
-        nextTick(() => {
-            setTimeout(initGameMap, 150);
-        });
+watch(
+    () => isTextValidated.value,
+    async (newVal) => {
+        if (newVal && !isGpsValidated.value) {
+
+            await nextTick();
+
+            setTimeout(() => {
+
+                if (map) {
+                    map.invalidateSize();
+                } else {
+                    initGameMap();
+                }
+
+            }, 500);
+        }
     }
-});
+);
 
 // Gestion du Modal
 const modalState = ref({
@@ -457,7 +481,7 @@ const isIndiceUnlocked = (indiceId) => {
                         </div>
 
                         <!-- Validation GPS (Étape 2) -->
-                        <div v-if="isTextValidated && !isGpsValidated" 
+                        <div v-show="isTextValidated && !isGpsValidated" 
                              class="p-6 md:p-8 rounded-2xl border-2 border-purple-300/60 bg-gradient-to-b from-purple-50/20 to-purple-100/20 shadow-inner space-y-6">
                             <div class="text-center">
                                 <h3 class="text-xl font-black italic uppercase text-purple-950">SE RENDRE SUR PLACE</h3>
@@ -466,7 +490,11 @@ const isIndiceUnlocked = (indiceId) => {
 
                             <!-- Carte de guidage -->
                             <div class="h-64 md:h-80 w-full bg-slate-100 rounded-xl overflow-hidden border-4 border-yellow-500 shadow-lg relative z-0">
-                                <div ref="mapContainer" class="w-full h-full z-0"></div>
+                                <div
+                                    ref="mapContainer"
+                                    class="w-full"
+                                    style="height:100%; min-height:320px;"
+                                ></div>
                                 <div class="absolute bottom-4 left-4 z-10 bg-purple-950 text-yellow-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase shadow-md border border-yellow-500/50">
                                     Rayon de validation: {{ enigme.rayon || 50 }}m
                                 </div>
