@@ -398,72 +398,73 @@ onMounted(() => {
                     <Button icon="pi pi-times" @click="isEditing = false; editingVilleId = null" class="!bg-white/10 !text-white !border-none !rounded-full" />
                 </div>
 
-                <form @submit.prevent="submit" class="p-6 md:p-12 lg:p-16 space-y-8 md:space-y-10 font-sans">
+                <form @submit.prevent="submit" class="p-4 md:p-12 lg:p-16 space-y-6 md:space-y-10 font-sans">
                     <!-- Admin Assignment (Only SuperAdmin) -->
-                    <div v-if="isSuperAdmin" class="space-y-4">
-                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Assigner à un Administrateur</label>
-                        <select v-model="form.user_id" class="w-full rounded-2xl border-2 border-blue-100 bg-blue-50/30 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] outline-none">
+                    <div v-if="isSuperAdmin" class="space-y-2">
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Assigner à un Administrateur</label>
+                        <select v-model="form.user_id" class="w-full rounded-xl border border-blue-100 bg-blue-50/30 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all">
                             <option :value="null">Laisser libre (Non assigné)</option>
                             <option v-for="admin in admins" :key="admin.id" :value="admin.id">{{ admin.name }} ({{ admin.email }})</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Nom de la ville</label>
-                            <InputText v-model="form.nom" placeholder="Ex: Paris, Annecy..." class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
+                        <div class="space-y-2">
+                            <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Nom de la ville</label>
+                            <InputText v-model="form.nom" placeholder="Ex: Paris, Annecy..." class="w-full !rounded-xl !border !border-blue-100 !bg-blue-50/30 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                         </div>
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Pays</label>
-                            <InputText v-model="form.pays" placeholder="France" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                        <div class="space-y-2">
+                            <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Pays</label>
+                            <InputText v-model="form.pays" placeholder="France" class="w-full !rounded-xl !border !border-blue-100 !bg-blue-50/30 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Population</label>
-                            <InputText v-model="form.population" type="number" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
+                        <div class="space-y-2">
+                            <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Population</label>
+                            <InputText v-model="form.population" type="number" class="w-full !rounded-xl !border !border-blue-100 !bg-blue-50/30 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                         </div>
-                        <div class="space-y-4">
-                            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Rayon d'action (km)</label>
-                            <InputText v-model="form.rayon_action" @input="updateMapRadius" type="number" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                        <div class="space-y-2">
+                            <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Rayon d'action (km)</label>
+                            <InputText v-model="form.rayon_action" @input="updateMapRadius" type="number" class="w-full !rounded-xl !border !border-blue-100 !bg-blue-50/30 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                         </div>
                     </div>
 
                     <!-- Map Section -->
                     <div class="space-y-4">
-                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Localisation de la ville</label>
-                        <div class="flex flex-col md:flex-row gap-4 mb-4">
-                            <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une ville ou une adresse..." class="flex-1 !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
-                            <Button @click.prevent="searchLocation" class="!px-8 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg">
-                                <span class="text-white font-black uppercase tracking-widest text-sm">Chercher</span>
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Localisation de la ville</label>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une ville ou une adresse..." class="flex-1 !rounded-xl !border !border-blue-100 !bg-blue-50/30 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
+                            <Button @click.prevent="searchLocation" class="!px-6 !py-3 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-lg justify-center w-full sm:w-auto">
+                                <span class="text-white font-black uppercase tracking-widest text-xs">Chercher</span>
                             </Button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-500 px-2 mb-2">
+                        <div class="grid grid-cols-2 gap-4 text-xs font-bold text-slate-500 px-2 mb-2">
                             <div>Lat : <span class="text-[#1DA1F2]">{{ form.latitude || 'N/A' }}</span></div>
                             <div>Lng : <span class="text-[#1DA1F2]">{{ form.longitude || 'N/A' }}</span></div>
                         </div>
-                        <div class="w-full h-[300px] md:h-[400px] rounded-3xl overflow-hidden border-4 border-blue-50 shadow-inner z-10" ref="mapContainer"></div>
-                        <p class="text-xs font-bold text-slate-400 text-center mt-2">Vous pouvez déplacer le marqueur pour ajuster le centre de votre ville.</p>
+                        <div class="w-full h-[250px] md:h-[400px] rounded-3xl overflow-hidden border-4 border-blue-50 shadow-inner z-10" ref="mapContainer"></div>
+                        <p class="text-[10px] md:text-xs font-bold text-slate-400 text-center mt-2">Vous pouvez déplacer le marqueur pour ajuster le centre de votre ville.</p>
                     </div>
 
-                    <div class="space-y-4">
-                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Description courte</label>
-                        <Textarea v-model="form.description" rows="2" class="w-full !rounded-2xl !border-blue-100 !bg-blue-50/30 !p-4 !font-bold !text-slate-800" />
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Description courte</label>
+                        <Textarea v-model="form.description" rows="2" class="w-full !rounded-xl !border !border-blue-100 !bg-blue-50/30 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white focus:!ring-2 focus:!ring-[#1DA1F2] transition-all outline-none" />
                     </div>
 
-                    <div class="space-y-4">
-                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Histoire & Légendes</label>
-                        <Textarea v-model="form.history" rows="6" class="w-full !rounded-[2rem] !border-blue-100 !bg-blue-50/30 !p-6 !font-bold !text-slate-800" />
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Histoire & Légendes</label>
+                        <Textarea v-model="form.history" rows="6" class="w-full !rounded-2xl !border !border-blue-100 !bg-blue-50/30 !p-4 md:!p-6 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white focus:!ring-2 focus:!ring-[#1DA1F2] transition-all outline-none" />
                     </div>
 
-                    <div class="space-y-4">
-                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Bannière Prestige</label>
-                        <FileUpload mode="basic" name="banniere" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir un visuel épique" />
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Bannière Prestige</label>
+                        <FileUpload mode="basic" name="banniere" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir un visuel" />
                     </div>
 
-                    <div class="pt-6">
-                        <Button type="submit" :loading="form.processing" class="w-full !py-4 md:!py-6 !bg-[#1DA1F2] !border-none !rounded-2xl md:!rounded-3xl !shadow-xl !shadow-blue-200">
-                            <span class="text-xl md:text-2xl font-black italic uppercase tracking-tighter">Enregistrer le Destin</span>
+                    <div class="pt-4">
+                        <Button type="submit" :loading="form.processing" class="w-full !py-4 md:!py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-xl justify-center">
+                            <span class="text-lg md:text-xl font-black italic uppercase tracking-tighter text-white">Enregistrer</span>
                         </Button>
                     </div>
                 </form>

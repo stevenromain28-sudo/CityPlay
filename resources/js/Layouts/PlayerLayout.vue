@@ -64,6 +64,22 @@ watch(() => isDashboard.value, (onDashboard) => {
     }
 });
 
+// Watcher réactif pour détecter immédiatement la fin du décompte côté client
+watch(() => gameStore.tempsRestant, (newSeconds) => {
+    if (activeSession.value && !isDashboard.value && newSeconds <= 0 && gameStore.session?.statut === 'actif') {
+        showTimeUpModal.value = true;
+        showPauseModal.value = false;
+        gameStore.stopTimer();
+
+        // Persister la fin de session côté serveur
+        axios.post(route('player.sessions.status', activeSession.value.id), { action: 'temps_epuise' })
+            .then(() => {
+                router.reload({ only: ['active_session'] });
+            })
+            .catch(err => console.error("Erreur d'expiration du temps", err));
+    }
+});
+
 // ON GARDE : Ton Heartbeat de synchronisation serveur
 const startHeartbeat = () => {
     if (heartbeatInterval) clearInterval(heartbeatInterval);

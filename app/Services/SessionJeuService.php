@@ -198,9 +198,9 @@ class SessionJeuService
         $session->increment('temps_restant', $minutes * 60);
         
         $data = [];
-        // Si la session était en temps épuisé, on la repasse en pause pour que l'utilisateur reprenne
+        // Si la session était en temps épuisé, on la repousse directement à actif pour reprendre le jeu immédiatement
         if ($session->statut === 'temps_epuise') {
-            $data['statut'] = 'pause';
+            $data['statut'] = 'actif';
         }
 
         // On réinitialise le dernier calcul pour que le nouveau temps soit pris en compte proprement

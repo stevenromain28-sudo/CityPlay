@@ -318,9 +318,14 @@ class GameplayController extends Controller
             'tente_le' => now(),
         ]);
 
+        $message = 'Félicitations ! Vous avez gagné tous les points de ce lieu.';
+        if ($enigme->lieu && $enigme->lieu->contenuCulturel) {
+            $message .= ' 📖 Un nouveau savoir historique a été gravé dans votre Grimoire ! Allez vite le consulter dans l\'Historique Culturel.';
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Félicitations ! Vous avez gagné tous les points de ce lieu.',
+            'message' => $message,
             'gps_validated' => true,
             'score_gagne' => $scoreGagne,
             'content' => $enigme->lieu->contenuCulturel,
@@ -328,6 +333,7 @@ class GameplayController extends Controller
             'equipe' => $equipe
         ]);
     }
+
 
     /**
      * Gérer le choix après validation GPS.

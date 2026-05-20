@@ -255,50 +255,50 @@ onMounted(() => {
         </div>
 
         <!-- Form Dialog -->
-        <Dialog v-model:visible="visible" modal :style="{ width: '50rem' }" class="prime-light-dialog">
+        <Dialog v-model:visible="visible" modal :style="{ width: '92vw', maxWidth: '50rem' }" class="prime-light-dialog">
             <template #header>
                 <div class="flex items-center">
-                    <span class="text-4xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">
+                    <span class="text-2xl md:text-4xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">
                         {{ form.id ? 'Modifier le Savoir' : 'Graver un Nouveau Savoir' }}
                     </span>
                 </div>
             </template>
             
-            <form @submit.prevent="submit" class="space-y-10 py-8 px-4 font-sans">
-                <div class="grid grid-cols-1" :class="[isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2', 'gap-10']">
-                    <div v-if="isSuperAdmin" class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
-                        <select v-model="selectedFormVille" class="w-full rounded-2xl bg-slate-50 border-slate-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
+            <form @submit.prevent="submit" class="space-y-6 md:space-y-10 py-4 md:py-8 px-2 md:px-4 font-sans">
+                <div class="grid grid-cols-1 sm:grid-cols-2" :class="[isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2', 'gap-4 md:gap-8']">
+                    <div v-if="isSuperAdmin" class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
+                        <select v-model="selectedFormVille" class="w-full rounded-xl bg-slate-50 border border-slate-150 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none appearance-none !block transition-all">
                             <option :value="null">Toutes les cités...</option>
                             <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
                         </select>
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Lieu associé</label>
-                        <select v-model="form.lieu_id" :disabled="form.id" class="w-full rounded-2xl bg-slate-50 border-slate-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none disabled:opacity-50 !block">
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Lieu associé</label>
+                        <select v-model="form.lieu_id" :disabled="form.id" class="w-full rounded-xl bg-slate-50 border border-slate-150 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none appearance-none disabled:opacity-50 !block transition-all">
                             <option value="" disabled>Choisir un lieu...</option>
                             <option v-for="lieu in filteredLieuxForForm" :key="lieu.id" :value="lieu.id">{{ lieu.nom }} {{ isSuperAdmin && lieu.ville ? `(${lieu.ville.nom})` : '' }}</option>
                         </select>
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Titre du contenu</label>
-                        <InputText v-model="form.titre" class="w-full !rounded-2xl !bg-slate-50 !border-slate-100 !p-4 !font-bold !text-slate-800" placeholder="Ex: L'histoire du Vieux Pont" />
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Titre du contenu</label>
+                        <InputText v-model="form.titre" class="w-full !rounded-xl !bg-slate-50 !border !border-slate-150 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" placeholder="Ex: L'histoire du Vieux Pont" />
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Récit Culturel</label>
-                    <textarea v-model="form.description" rows="6" class="w-full rounded-[2rem] bg-slate-50 border-slate-100 p-6 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] placeholder:text-slate-300" placeholder="Racontez une anecdote passionnante sur ce lieu..."></textarea>
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Récit Culturel</label>
+                    <textarea v-model="form.description" rows="6" class="w-full rounded-2xl bg-slate-50 border border-slate-150 p-4 md:p-6 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white placeholder:text-slate-300 outline-none transition-all" placeholder="Racontez une anecdote passionnante sur ce lieu..."></textarea>
                 </div>
 
-                <div class="space-y-4">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Fichier Audio (Optionnel)</label>
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Fichier Audio (Optionnel)</label>
                     <FileUpload mode="basic" name="audio" accept="audio/*" @select="onAudioSelect" class="w-full" chooseLabel="Ajouter une voix au récit" />
                 </div>
 
                 <!-- Galerie de photos multiples -->
                 <div class="space-y-4">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Photos illustratives (Plusieurs possibles)</label>
+                    <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Photos illustratives (Plusieurs possibles)</label>
                     
                     <!-- Galerie existante et nouvelle -->
                     <div v-if="form.existing_images.length > 0 || form.images.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-3xl border border-slate-100">
@@ -329,7 +329,7 @@ onMounted(() => {
 
                     <!-- Input de sélection multiple -->
                     <div class="relative">
-                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 hover:border-[#1DA1F2] rounded-[2rem] cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-colors p-6 text-center">
+                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 hover:border-[#1DA1F2] rounded-[2rem] cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-colors p-4 text-center">
                             <div class="flex flex-col items-center justify-center pt-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#1DA1F2] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -342,12 +342,12 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="pt-6 flex space-x-4">
-                    <Button v-if="form.id" type="button" @click="deleteContenu" class="!py-6 !bg-red-50 !text-red-500 !border-none !rounded-[2rem] hover:!bg-red-100 transition-all flex-1">
-                        <span class="text-xl font-black italic uppercase tracking-widest">Effacer</span>
+                <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                    <Button v-if="form.id" type="button" @click="deleteContenu" class="!py-4 !bg-red-50 !text-red-500 !border-none !rounded-xl hover:!bg-red-100 transition-all flex-1 justify-center">
+                        <span class="text-lg font-black italic uppercase tracking-widest">Effacer</span>
                     </Button>
-                    <Button type="submit" :loading="form.processing" class="!py-6 !bg-[#1DA1F2] !border-none !rounded-[2rem] !shadow-2xl !shadow-blue-200 hover:!scale-[1.02] transition-transform flex-[2]">
-                         <span class="text-2xl font-black italic uppercase text-white tracking-widest">Enregistrer l'Archive</span>
+                    <Button type="submit" :loading="form.processing" class="!py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform flex-[2] justify-center">
+                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Enregistrer</span>
                     </Button>
                 </div>
             </form>
@@ -411,16 +411,31 @@ onMounted(() => {
 <style>
 .prime-light-dialog .p-dialog {
     background: white !important;
-    border-radius: 4rem !important;
+    border-radius: 2rem !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1) !important;
+}
+@media (min-width: 768px) {
+    .prime-light-dialog .p-dialog {
+        border-radius: 4rem !important;
+    }
 }
 .prime-light-dialog .p-dialog-header {
     background: transparent !important;
-    padding: 3rem 3rem 0 3rem !important;
+    padding: 1.5rem 1.5rem 0 1.5rem !important;
+}
+@media (min-width: 768px) {
+    .prime-light-dialog .p-dialog-header {
+        padding: 3rem 3rem 0 3rem !important;
+    }
 }
 .prime-light-dialog .p-dialog-content {
     background: transparent !important;
-    padding: 0 3rem 3rem 3rem !important;
+    padding: 0 1.5rem 1.5rem 1.5rem !important;
+}
+@media (min-width: 768px) {
+    .prime-light-dialog .p-dialog-content {
+        padding: 0 3rem 3rem 3rem !important;
+    }
 }
 
 h2, h3, h4, span, button { font-family: 'Bangers', cursive; }

@@ -461,147 +461,147 @@ onMounted(() => {
         </div>
 
         <!-- Form Dialog -->
-        <Dialog v-model:visible="visible" modal :style="{ width: '60rem' }" class="prime-dark-dialog">
+        <Dialog v-model:visible="visible" modal :style="{ width: '92vw', maxWidth: '60rem' }" class="prime-dark-dialog">
             <template #header>
                 <div class="flex items-center">
-                    <span class="text-4xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">Écrire le Destin</span>
+                    <span class="text-2xl md:text-4xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">Écrire le Destin</span>
                 </div>
             </template>
 
-            <form @submit.prevent="submit" class="space-y-10 py-8 px-4 font-sans">
+            <form @submit.prevent="submit" class="space-y-6 md:space-y-10 py-4 md:py-8 px-2 md:px-4 font-sans">
                 <!-- Message d'erreur global -->
-                <div v-if="Object.keys(form.errors).length > 0" class="bg-red-500/20 border-2 border-red-500 text-red-200 p-6 rounded-2xl mb-6 font-bold shadow-lg">
-                    <p class="text-xl font-black italic uppercase text-red-400 mb-2">Erreur de validation</p>
-                    <ul class="list-disc pl-5">
+                <div v-if="Object.keys(form.errors).length > 0" class="bg-red-500/20 border-2 border-red-500 text-red-200 p-4 md:p-6 rounded-2xl mb-6 font-bold shadow-lg">
+                    <p class="text-lg md:text-xl font-black italic uppercase text-red-400 mb-2">Erreur de validation</p>
+                    <ul class="list-disc pl-5 text-xs md:text-sm">
                         <li v-for="(error, field) in form.errors" :key="field">{{ error }}</li>
                     </ul>
                 </div>
 
-                <div class="grid grid-cols-1" :class="[isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2', 'gap-10']">
-                    <div v-if="isSuperAdmin" class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
-                        <select v-model="selectedFormVille" class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+                    <div v-if="isSuperAdmin" class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
+                        <select v-model="selectedFormVille" class="w-full rounded-xl bg-blue-50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all appearance-none !block">
                             <option :value="null">Toutes les cités...</option>
                             <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
                         </select>
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Lieu associé</label>
-                        <select v-model="form.lieu_id" class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block">
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Lieu associé</label>
+                        <select v-model="form.lieu_id" class="w-full rounded-xl bg-blue-50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all appearance-none !block">
                             <option value="" disabled>Choisir un lieu...</option>
                             <option v-for="lieu in filteredLieuxForForm" :key="lieu.id" :value="lieu.id">{{ lieu.nom }} {{ isSuperAdmin && lieu.ville ? `(${lieu.ville.nom})` : '' }}</option>
                         </select>
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Titre de l'énigme</label>
-                        <InputText v-model="form.titre" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Titre de l'énigme</label>
+                        <InputText v-model="form.titre" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Le Mystère (Contenu)</label>
-                    <textarea v-model="form.contenu" rows="4" class="w-full rounded-[2rem] bg-blue-50 border-blue-100 p-6 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] placeholder:text-slate-400" placeholder="Décrivez l'énigme de manière mystérieuse..."></textarea>
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Le Mystère (Contenu)</label>
+                    <textarea v-model="form.contenu" rows="4" class="w-full rounded-2xl bg-blue-50 border border-blue-100 p-4 md:p-6 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all placeholder:text-slate-400" placeholder="Décrivez l'énigme de manière mystérieuse..."></textarea>
                 </div>
 
                 <!-- GPS Map Selection -->
                 <div class="space-y-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Localisation de l'Énigme (GPS)</label>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Localisation de l'Énigme (GPS)</label>
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" v-model="form.verification_gps" id="gps_check" class="rounded text-[#1DA1F2]">
-                            <label for="gps_check" class="text-[10px] font-black uppercase text-slate-400">Activer validation GPS</label>
+                            <label for="gps_check" class="text-[9px] font-black uppercase text-slate-400">Activer validation GPS</label>
                         </div>
                     </div>
-                    <div class="h-64 rounded-3xl overflow-hidden border-2 border-blue-50">
+                    <div class="h-48 md:h-64 rounded-3xl overflow-hidden border-2 border-blue-50">
                         <div ref="mapContainer" class="w-full h-full z-0"></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="space-y-2">
+                    <div class="grid grid-cols-3 gap-2 md:gap-6">
+                        <div class="space-y-1">
                             <label class="text-[8px] font-black uppercase text-slate-400 ml-2">Latitude</label>
-                            <InputText v-model="form.latitude" readonly class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-3 !text-xs !font-bold" />
+                            <InputText v-model="form.latitude" readonly class="w-full !rounded-lg !bg-blue-50/50 !border-none !p-2 md:!p-3 !text-[10px] md:!text-xs !font-bold" />
                         </div>
-                        <div class="space-y-2">
+                        <div class="space-y-1">
                             <label class="text-[8px] font-black uppercase text-slate-400 ml-2">Longitude</label>
-                            <InputText v-model="form.longitude" readonly class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-3 !text-xs !font-bold" />
+                            <InputText v-model="form.longitude" readonly class="w-full !rounded-lg !bg-blue-50/50 !border-none !p-2 md:!p-3 !text-[10px] md:!text-xs !font-bold" />
                         </div>
-                        <div class="space-y-2">
-                            <label class="text-[8px] font-black uppercase text-slate-400 ml-2">Rayon de validation (m)</label>
-                            <InputText v-model="form.rayon" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-3 !text-xs !font-bold" />
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-black uppercase text-slate-400 ml-2">Rayon (m)</label>
+                            <InputText v-model="form.rayon" type="number" class="w-full !rounded-lg !bg-blue-50/50 !border-none !p-2 md:!p-3 !text-[10px] md:!text-xs !font-bold" />
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse</label>
-                        <InputText v-model="form.reponse" placeholder="ex: secret,porte" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse</label>
+                        <InputText v-model="form.reponse" placeholder="ex: secret,porte" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Niveau (1-3)</label>
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Niveau (1-3)</label>
                         <select v-model="form.niveau" 
-                                class="w-full rounded-2xl bg-blue-50 border-blue-100 p-4 font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] appearance-none !block"
+                                class="w-full rounded-xl bg-blue-50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all appearance-none !block"
                                 :class="{'opacity-50 cursor-not-allowed': form.is_bonus}">
                             <option v-for="lvl in 3" :key="lvl" :value="lvl" :disabled="!form.is_bonus && usedLevels.includes(lvl)">
                                 Niveau {{ lvl }} {{ !form.is_bonus && usedLevels.includes(lvl) ? '(Déjà utilisé)' : '' }}
                             </option>
                         </select>
-                        <p v-if="!form.is_bonus && usedLevels.length >= 3" class="text-[10px] text-red-500 font-bold uppercase">Tous les niveaux principaux sont occupés</p>
+                        <p v-if="!form.is_bonus && usedLevels.length >= 3" class="text-[8px] md:text-[10px] text-red-500 font-bold uppercase">Tous les niveaux principaux sont occupés</p>
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Ordre</label>
-                        <InputText v-model="form.ordre" type="number" class="w-full !rounded-2xl !bg-blue-50 !border-blue-100 !p-4 !font-bold !text-slate-800" />
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Ordre</label>
+                        <InputText v-model="form.ordre" type="number" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
                     </div>
-                    <div class="space-y-4 flex flex-col justify-end pb-4">
-                        <div class="flex items-center space-x-3 bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                            <input type="checkbox" v-model="form.is_bonus" id="is_bonus" class="w-5 h-5 rounded text-purple-600 focus:ring-purple-500">
-                            <label for="is_bonus" class="text-sm font-black uppercase text-purple-700 cursor-pointer">Énigme Bonus</label>
+                    <div class="space-y-2 flex flex-col justify-end pb-1">
+                        <div class="flex items-center space-x-3 bg-purple-50/50 p-3 rounded-xl border border-purple-100">
+                            <input type="checkbox" v-model="form.is_bonus" id="is_bonus" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500">
+                            <label for="is_bonus" class="text-xs font-black uppercase text-purple-700 cursor-pointer select-none">Énigme Bonus</label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Indices Section (Parchments) -->
-                <div class="space-y-8">
+                <div class="space-y-6">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-2xl font-black italic uppercase text-yellow-400 tracking-tighter">Les Indices du Parchemin ({{ form.indices.length }}/5)</h4>
-                        <Button v-if="form.indices.length < 5" type="button" @click="addIndice" class="!bg-yellow-400/10 !text-yellow-400 !border-none !rounded-xl !px-4 !py-3 hover:!bg-yellow-400/20 transition-all !flex !items-center">
+                        <h4 class="text-lg md:text-2xl font-black italic uppercase text-yellow-400 tracking-tighter">Les Indices du Parchemin ({{ form.indices.length }}/5)</h4>
+                        <Button v-if="form.indices.length < 5" type="button" @click="addIndice" class="!bg-yellow-400/10 !text-yellow-400 !border-none !rounded-xl !px-3 !py-2 hover:!bg-yellow-400/20 transition-all !flex !items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-xs font-black uppercase tracking-widest">Ajouter Indice</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Ajouter</span>
                         </Button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div v-for="(indice, index) in form.indices" :key="index" class="relative p-8 bg-[#F5DEB3] rounded-sm shadow-2xl border-x-4 border-amber-900/10 rotate-[-1deg] hover:rotate-0 transition-transform">
-                            <div class="absolute -top-3 -left-3 w-8 h-8 bg-amber-900 text-white rounded-full flex items-center justify-center text-[10px] font-black">#{{ index + 1 }}</div>
-                            <button type="button" @click.prevent="removeIndice(index)" class="absolute -top-3 -right-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 p-0 flex items-center justify-center shadow-lg transition-colors cursor-pointer border-2 border-[#F5DEB3]">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
+                        <div v-for="(indice, index) in form.indices" :key="index" class="relative p-5 md:p-8 bg-[#F5DEB3] rounded-sm shadow-2xl border-x-4 border-amber-900/10 rotate-[-1deg] hover:rotate-0 transition-transform">
+                            <div class="absolute -top-2 -left-2 w-6 h-6 md:w-8 md:h-8 bg-amber-900 text-white rounded-full flex items-center justify-center text-[10px] font-black">#{{ index + 1 }}</div>
+                            <button type="button" @click.prevent="removeIndice(index)" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 md:w-8 md:h-8 p-0 flex items-center justify-center shadow-lg transition-colors cursor-pointer border-2 border-[#F5DEB3]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
 
-                            <textarea v-model="indice.contenu" rows="2" class="w-full bg-transparent border-none p-0 font-bold text-amber-900 placeholder:text-amber-900/40 focus:ring-0 italic" placeholder="Écrivez l'indice ici..."></textarea>
-                            <div class="mt-4 flex items-center justify-between border-t border-amber-900/20 pt-4">
+                            <textarea v-model="indice.contenu" rows="2" class="w-full bg-transparent border-none p-0 font-bold text-amber-900 placeholder:text-amber-900/40 focus:ring-0 italic text-sm md:text-base outline-none resize-none" placeholder="Écrivez l'indice ici..."></textarea>
+                            <div class="mt-4 flex items-center justify-between border-t border-amber-900/20 pt-3">
                                 <span class="text-[8px] font-black uppercase text-amber-900/60 tracking-widest">Pénalité Points</span>
-                                <input type="number" v-model="indice.penalite" class="w-16 bg-white/40 border-none rounded-lg text-xs font-black text-amber-900 p-2 focus:ring-0">
+                                <input type="number" v-model="indice.penalite" class="w-12 md:w-16 bg-white/40 border-none rounded-lg text-xs font-black text-amber-900 p-1.5 focus:ring-0">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-white/30 ml-2">Image de l'Énigme</label>
-                        <FileUpload mode="basic" name="image" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Révéler par une image" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Image de l'Énigme</label>
+                        <FileUpload mode="basic" name="image" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir une image" />
                     </div>
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-white/30 ml-2">Audio de l'Énigme (Ambiance/Indice vocal)</label>
-                        <FileUpload mode="basic" name="audio" accept="audio/*" @select="onAudioSelect" class="w-full" chooseLabel="Murmurer un secret" />
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Audio de l'Énigme (Ambiance/Indice vocal)</label>
+                        <FileUpload mode="basic" name="audio" accept="audio/*" @select="onAudioSelect" class="w-full" chooseLabel="Choisir un audio" />
                     </div>
                 </div>
 
-                <div class="pt-10 flex flex-col md:flex-row gap-4">
-                    <Button type="submit" :loading="form.processing" class="flex-1 !py-6 !bg-yellow-400 !border-none !rounded-[2rem] !shadow-2xl !shadow-yellow-900/20 hover:!scale-[1.02] transition-transform">
-                         <span class="text-2xl font-black italic uppercase text-white tracking-widest">Sceller l'Énigme</span>
+                <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                    <Button type="submit" :loading="form.processing" class="flex-1 !py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform justify-center">
+                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Sceller l'Énigme</span>
                     </Button>
-                    <Button v-if="form.id" @click.prevent="deleteEnigme" class="md:w-auto !px-8 !py-6 !bg-red-500 hover:!bg-red-600 !border-none !rounded-[2rem] !shadow-2xl transition-colors">
-                         <span class="text-2xl font-black italic uppercase text-white tracking-widest">Détruire</span>
+                    <Button v-if="form.id" @click.prevent="deleteEnigme" class="sm:w-auto !px-6 !py-4 !bg-red-500 hover:!bg-red-600 !border-none !rounded-xl !shadow-xl transition-colors justify-center">
+                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Détruire</span>
                     </Button>
                 </div>
             </form>
@@ -666,15 +666,30 @@ onMounted(() => {
 .prime-dark-dialog .p-dialog {
     background: #0f1123 !important;
     border: 2px solid rgba(255,255,255,0.05) !important;
-    border-radius: 4rem !important;
+    border-radius: 2rem !important;
+}
+@media (min-width: 768px) {
+    .prime-dark-dialog .p-dialog {
+        border-radius: 4rem !important;
+    }
 }
 .prime-dark-dialog .p-dialog-header {
     background: transparent !important;
-    padding: 3rem 3rem 0 3rem !important;
+    padding: 1.5rem 1.5rem 0 1.5rem !important;
+}
+@media (min-width: 768px) {
+    .prime-dark-dialog .p-dialog-header {
+        padding: 3rem 3rem 0 3rem !important;
+    }
 }
 .prime-dark-dialog .p-dialog-content {
     background: transparent !important;
-    padding: 0 3rem 3rem 3rem !important;
+    padding: 0 1.5rem 1.5rem 1.5rem !important;
+}
+@media (min-width: 768px) {
+    .prime-dark-dialog .p-dialog-content {
+        padding: 0 3rem 3rem 3rem !important;
+    }
 }
 .prime-dark-dialog .p-dialog-title {
     color: white !important;

@@ -102,6 +102,9 @@ class SessionJeuController extends Controller
             case 'reprendre':
                 $this->sessionService->reprendreSession($session);
                 break;
+            case 'temps_epuise':
+                $session->update(['statut' => 'temps_epuise', 'temps_restant' => 0]);
+                break;
             case 'terminer':
                 $this->sessionService->terminerSession($session);
                 return redirect()->route('player.dashboard');

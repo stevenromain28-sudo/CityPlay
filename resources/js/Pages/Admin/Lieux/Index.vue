@@ -238,134 +238,134 @@ onMounted(() => {
 <template>
     <Head title="Gestion des Lieux - Admin" />
 
-    <div class="min-h-screen bg-[#F0F7FF] font-sans p-6 md:p-12 overflow-hidden flex flex-col">
+    <div class="min-h-screen bg-[#F0F7FF] font-sans p-4 md:p-12 overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-10">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-10">
             <div>
                 <Link :href="route('admin.dashboard')" class="flex items-center text-[#1DA1F2] font-black uppercase text-xs mb-2 hover:translate-x-[-5px] transition-transform">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg>
                     Retour Dashboard
                 </Link>
-                <h2 class="text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
+                <h2 class="text-3xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
                     Lieux de <span class="text-[#1DA1F2]">L'Aventure</span>
                 </h2>
             </div>
-            <Button @click="openNew" class="!px-8 !py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl !shadow-yellow-100 hover:!scale-105 transition-transform !flex !items-center">
+            <Button @click="openNew" class="!px-5 !py-3 md:!px-8 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl !shadow-yellow-100 hover:!scale-105 transition-transform !flex !items-center w-full sm:w-auto justify-center">
                 <template #default>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                    <span class="text-white font-black italic uppercase tracking-widest">Nouveau Lieu</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
+                    <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-base">Nouveau Lieu</span>
                 </template>
             </Button>
         </div>
 
         <!-- Map Container -->
-        <div class="flex-1 bg-white rounded-[3rem] shadow-2xl shadow-blue-100 overflow-hidden border-8 border-white relative map-wrapper">
-            <div ref="mapContainer" class="w-full h-full min-h-[500px] z-0"></div>
+        <div class="flex-1 bg-white rounded-3xl md:rounded-[3rem] shadow-2xl shadow-blue-100 overflow-hidden border-4 md:border-8 border-white relative map-wrapper min-h-[400px]">
+            <div ref="mapContainer" class="w-full h-full min-h-[400px] md:min-h-[500px] z-0"></div>
             
-            <!-- Floating List (Mini Overlay) -->
-            <div class="absolute top-10 right-10 z-[1000] w-80 bg-white/80 backdrop-blur-xl rounded-[2rem] p-6 shadow-2xl border border-white max-h-[70%] overflow-y-auto custom-scrollbar">
-                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Liste des points</h3>
-                <div class="space-y-4">
-                    <div v-for="lieu in lieux" :key="lieu.id" @click="editLieu(lieu)" class="p-4 bg-white rounded-2xl border border-blue-50 hover:border-[#1DA1F2] cursor-pointer transition-all group font-sans relative overflow-hidden">
+            <!-- Floating List (Mini Overlay) - Centered at the bottom on mobile, absolute top-right on desktop -->
+            <div class="absolute bottom-4 left-4 right-4 md:bottom-auto md:left-auto md:top-10 md:right-10 z-[1000] w-auto max-w-[calc(100%-2rem)] md:w-80 bg-white/90 backdrop-blur-xl rounded-[2rem] p-4 md:p-6 shadow-2xl border border-white max-h-[35%] md:max-h-[70%] overflow-y-auto custom-scrollbar mx-auto md:mx-0">
+                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 md:mb-6">Liste des points</h3>
+                <div class="space-y-3">
+                    <div v-for="lieu in lieux" :key="lieu.id" @click="editLieu(lieu)" class="p-3 md:p-4 bg-white rounded-xl md:rounded-2xl border border-blue-50 hover:border-[#1DA1F2] cursor-pointer transition-all group font-sans relative overflow-hidden">
                         <div v-if="lieu.image_principale" class="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity">
                             <img :src="lieu.image_principale" class="w-full h-full object-cover">
                         </div>
                         <div class="relative z-10">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-black italic uppercase text-slate-800 group-hover:text-[#1DA1F2]">{{ lieu.nom }}</span>
-                                <div class="flex items-center space-x-2">
-                                    <span v-if="lieu.contenu_culturel" class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-                                    <span class="px-2 py-1 bg-blue-50 text-[#1DA1F2] text-[8px] font-black rounded-lg uppercase">Niveau {{ lieu.difficulte }}</span>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs md:text-sm font-black italic uppercase text-slate-800 group-hover:text-[#1DA1F2]">{{ lieu.nom }}</span>
+                                <div class="flex items-center space-x-1.5 shrink-0">
+                                    <span v-if="lieu.contenu_culturel" class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
+                                    <span class="px-1.5 py-0.5 bg-blue-50 text-[#1DA1F2] text-[8px] font-black rounded uppercase">N.{{ lieu.difficulte }}</span>
                                 </div>
                             </div>
-                            <p class="text-[10px] text-slate-400 line-clamp-1 font-bold">{{ lieu.description }}</p>
+                            <p class="text-[9px] md:text-[10px] text-slate-400 line-clamp-1 font-bold">{{ lieu.description }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Form Dialog -->
-        <Dialog v-model:visible="visible" modal :style="{ width: '50rem' }" class="prime-custom-dialog">
+        <!-- Form Dialog (Responsive sizing width: '92vw' on mobile, '50rem' max) -->
+        <Dialog v-model:visible="visible" modal :style="{ width: '92vw', maxWidth: '50rem' }" class="prime-custom-dialog">
             <template #header>
                 <div class="flex items-center">
-                    <span class="text-3xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">Config Lieu</span>
+                    <span class="text-2xl md:text-3xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">Config Lieu</span>
                 </div>
             </template>
             
-            <form @submit.prevent="submit" class="space-y-6 py-4 font-sans px-2">
+            <form @submit.prevent="submit" class="space-y-4 md:space-y-6 py-2 md:py-4 font-sans px-1 md:px-2 max-h-[80vh] overflow-y-auto custom-scrollbar">
                 <!-- Ville Selection (Only SuperAdmin) -->
-                <div v-if="isSuperAdmin" class="space-y-3">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Ville Associée</label>
-                    <select v-model="form.ville_id" class="w-full rounded-xl bg-blue-50/50 border-none p-4 font-bold focus:ring-2 focus:ring-[#1DA1F2] outline-none">
+                <div v-if="isSuperAdmin" class="space-y-1.5">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Ville Associée</label>
+                    <select v-model="form.ville_id" class="w-full rounded-xl bg-blue-50/50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all">
                         <option :value="null">Sélectionner une ville...</option>
                         <option v-for="v in villes" :key="v.id" :value="v.id">{{ v.nom }}</option>
                     </select>
                 </div>
                 
-                <div class="space-y-3">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Recherche géographique</label>
-                    <div class="flex flex-col md:flex-row gap-4 mb-4">
-                        <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une adresse, un monument..." class="flex-1 !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
-                        <Button @click.prevent="searchLocation" class="!px-6 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-lg hover:scale-105 transition-transform">
+                <div class="space-y-1.5">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Recherche géographique</label>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une adresse, un monument..." class="flex-1 !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                        <Button @click.prevent="searchLocation" class="!px-5 !py-3 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-lg hover:scale-105 transition-transform w-full sm:w-auto justify-center">
                             <span class="text-white font-black uppercase tracking-widest text-xs">Chercher</span>
                         </Button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Nom du lieu</label>
-                        <InputText v-model="form.nom" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Nom du lieu</label>
+                        <InputText v-model="form.nom" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
                     </div>
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Localisation (Adresse/Quartier)</label>
-                        <InputText v-model="form.localisation" placeholder="Ex: Vieille Ville, Rue de la Paix..." class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Difficulté (1-3)</label>
-                        <InputText v-model="form.difficulte" type="number" min="1" max="3" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
-                    </div>
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Temps estimé (min)</label>
-                        <InputText v-model="form.duree_estimee" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Localisation (Adresse/Quartier)</label>
+                        <InputText v-model="form.localisation" placeholder="Ex: Vieille Ville, Rue de la Paix..." class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
                     </div>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Description</label>
-                    <textarea v-model="form.description" rows="3" class="w-full rounded-xl bg-blue-50/50 border-none p-4 font-bold focus:ring-2 focus:ring-[#1DA1F2] transition-all"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Latitude</label>
-                        <InputText v-model="form.latitude" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" readonly />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Difficulté (1-3)</label>
+                        <InputText v-model="form.difficulte" type="number" min="1" max="3" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
                     </div>
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Longitude</label>
-                        <InputText v-model="form.longitude" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" readonly />
-                    </div>
-                    <div class="space-y-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Rayon (m)</label>
-                        <InputText v-model="form.rayon" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border-none !p-4 !font-bold" />
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Temps estimé (min)</label>
+                        <InputText v-model="form.duree_estimee" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
                     </div>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Image du Lieu</label>
+                <div class="space-y-1.5">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Description</label>
+                    <textarea v-model="form.description" rows="3" class="w-full rounded-xl bg-blue-50/50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white transition-all outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Latitude</label>
+                        <InputText v-model="form.latitude" class="w-full !rounded-xl !bg-blue-100/20 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold" readonly />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Longitude</label>
+                        <InputText v-model="form.longitude" class="w-full !rounded-xl !bg-blue-100/20 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold" readonly />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Rayon (m)</label>
+                        <InputText v-model="form.rayon" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Image du Lieu</label>
                     <FileUpload mode="basic" name="image_principale" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Sélectionner une photo" />
                 </div>
 
-                <div class="pt-6 flex flex-col sm:flex-row gap-4">
-                    <Button type="submit" :loading="form.processing" class="flex-1 !py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg hover:scale-105 transition-transform">
-                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Enregistrer l'emplacement</span>
+                <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                    <Button type="submit" :loading="form.processing" class="flex-1 !py-3.5 md:!py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg hover:scale-105 transition-transform justify-center">
+                         <span class="text-base md:text-lg font-black italic uppercase text-white tracking-widest">Enregistrer</span>
                     </Button>
-                    <Button v-if="form.id" @click.prevent="deleteLieu" class="sm:w-auto !px-8 !py-5 !bg-red-500 hover:!bg-red-600 !border-none !rounded-2xl !shadow-lg transition-colors">
-                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Supprimer</span>
+                    <Button v-if="form.id" @click.prevent="deleteLieu" class="sm:w-auto !px-6 md:!px-8 !py-3.5 md:!py-5 !bg-red-500 hover:!bg-red-600 !border-none !rounded-2xl !shadow-lg transition-colors justify-center">
+                         <span class="text-base md:text-lg font-black italic uppercase text-white tracking-widest">Supprimer</span>
                     </Button>
                 </div>
             </form>
