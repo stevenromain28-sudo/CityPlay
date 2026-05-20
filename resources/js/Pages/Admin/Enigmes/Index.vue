@@ -265,6 +265,15 @@ watch(() => form.lieu_id, (newVal) => {
     }
 });
 
+watch(() => [form.lieu_id, form.is_bonus], ([newLieu, newBonus]) => {
+    if (!newBonus && newLieu) {
+        const selectedLieu = props.lieux.find(l => l.id === newLieu);
+        if (selectedLieu) {
+            form.titre = selectedLieu.nom;
+        }
+    }
+});
+
 const onFileSelect = (event) => {
     form.image = event.files[0];
 };
@@ -477,6 +486,16 @@ onMounted(() => {
                     </ul>
                 </div>
 
+                <!-- Type d'Énigme Selector -->
+                <div class="flex justify-center p-1 bg-slate-900/50 rounded-2xl border border-white/10 max-w-md mx-auto">
+                    <button type="button" @click="form.is_bonus = false" class="flex-1 py-3 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all duration-300" :class="form.is_bonus ? 'text-white/40 hover:text-white' : 'bg-[#1DA1F2] text-white shadow-lg shadow-blue-500/20'">
+                        Énigme Principale
+                    </button>
+                    <button type="button" @click="form.is_bonus = true" class="flex-1 py-3 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all duration-300" :class="form.is_bonus ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-white/40 hover:text-white'">
+                        Énigme Bonus
+                    </button>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                     <div v-if="isSuperAdmin" class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Filtrer par Ville</label>
@@ -494,7 +513,8 @@ onMounted(() => {
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Titre de l'énigme</label>
-                        <InputText v-model="form.titre" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
+                        <InputText v-model="form.titre" :disabled="!form.is_bonus" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" :class="{'!bg-slate-200/50 !text-slate-500 cursor-not-allowed': !form.is_bonus}" />
+                        <p v-if="!form.is_bonus" class="text-[8px] md:text-[10px] text-blue-500 font-bold uppercase tracking-wider ml-2">Identique au nom du lieu associé</p>
                     </div>
                 </div>
 
@@ -531,7 +551,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Mots-clés de réponse</label>
                         <InputText v-model="form.reponse" placeholder="ex: secret,porte" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
@@ -550,12 +570,6 @@ onMounted(() => {
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Ordre</label>
                         <InputText v-model="form.ordre" type="number" class="w-full !rounded-xl !bg-blue-50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold !text-slate-800 focus:!bg-white" />
-                    </div>
-                    <div class="space-y-2 flex flex-col justify-end pb-1">
-                        <div class="flex items-center space-x-3 bg-purple-50/50 p-3 rounded-xl border border-purple-100">
-                            <input type="checkbox" v-model="form.is_bonus" id="is_bonus" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500">
-                            <label for="is_bonus" class="text-xs font-black uppercase text-purple-700 cursor-pointer select-none">Énigme Bonus</label>
-                        </div>
                     </div>
                 </div>
 
@@ -588,7 +602,11 @@ onMounted(() => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Image de l'Énigme</label>
-                        <FileUpload mode="basic" name="image" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir une image" />
+                        <div v-if="!form.is_bonus" class="bg-white/5 p-4 rounded-xl border border-white/10 flex items-center gap-4">
+                            <img v-if="props.lieux.find(l => l.id === form.lieu_id)?.image_principale" :src="props.lieux.find(l => l.id === form.lieu_id)?.image_principale" class="w-12 h-12 rounded-lg object-cover border border-white/10">
+                            <span class="text-xs font-bold text-white/40 uppercase tracking-wide">Image du lieu associée automatiquement</span>
+                        </div>
+                        <FileUpload v-else mode="basic" name="image" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir une image" />
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Audio de l'Énigme (Ambiance/Indice vocal)</label>

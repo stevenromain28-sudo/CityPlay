@@ -145,23 +145,39 @@ const initGameMap = () => {
                 playerMarker.setLatLng(playerPos);
             }
 
-            // Ajuster la vue pour voir les deux marqueurs
-            const bounds = L.latLngBounds([playerPos, [props.enigme.latitude, props.enigme.longitude]]);
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
-        }, (err) => console.error("Erreur GPS:", err), {
+            // Ajuster la vue pour voir les deux marqueurs (seulement si le joueur est à moins de 15km)
+            const distance = map.distance(playerPos, [props.enigme.latitude, props.enigme.longitude]);
+            if (distance < 15000) {
+                const bounds = L.latLngBounds([playerPos, [props.enigme.latitude, props.enigme.longitude]]);
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+            } else {
+                // Si le joueur est trop loin (ex: coordonnées fausses ou test à distance), on reste centré sur l'énigme
+                map.setView([props.enigme.latitude, props.enigme.longitude], 16);
+            }
+        }, (err) => {
+            console.error("Erreur GPS:", err);
+            // En cas d'erreur de géolocalisation, on s'assure que la carte reste centrée sur l'énigme
+            map.setView([props.enigme.latitude, props.enigme.longitude], 16);
+        }, {
             enableHighAccuracy: true,
             maximumAge: 10000,
             timeout: 30000,
         });
     }
 
-    setTimeout(() => map.invalidateSize(), 400);
+    // Multi-stage size invalidation pour corriger les bugs de rendu gris de Leaflet
+    setTimeout(() => { if (map) map.invalidateSize(); }, 50);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 600);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 1200);
 };
 
 // Observer les changements pour initialiser la carte quand on arrive à l'étape GPS
 watch(isTextValidated, (newVal) => {
     if (newVal && !isGpsValidated.value) {
-        setTimeout(initGameMap, 100);
+        nextTick(() => {
+            setTimeout(initGameMap, 150);
+        });
     }
 });
 
@@ -193,6 +209,15 @@ const closeModal = (action = null) => {
             if (action === 'reload') {
                 router.reload();
             }
+            // Forcer l'invalidation de la taille de la carte pour éviter le bug de l'écran gris
+            nextTick(() => {
+                if (map) {
+                    setTimeout(() => { if (map) map.invalidateSize(); }, 50);
+                    setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+                } else if (isTextValidated.value && !isGpsValidated.value) {
+                    initGameMap();
+                }
+            });
         }
     });
 };

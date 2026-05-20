@@ -75,6 +75,13 @@ class EnigmeController extends Controller
 
         $data = $request->except('indices');
 
+        // Automatisation pour les énigmes principales (non bonus)
+        if (!($data['is_bonus'] ?? false)) {
+            $lieu = Lieu::findOrFail($data['lieu_id']);
+            $data['titre'] = $lieu->nom;
+            $data['image'] = $lieu->image_principale;
+        }
+
         // Validation personnalisée : Unicité du niveau pour les énigmes principales d'un lieu
         if (!($data['is_bonus'] ?? false)) {
             $exists = Enigme::where('lieu_id', $data['lieu_id'])
@@ -138,6 +145,13 @@ class EnigmeController extends Controller
         ]);
 
         $data = $request->all();
+
+        // Automatisation pour les énigmes principales (non bonus)
+        if (!($data['is_bonus'] ?? false)) {
+            $lieu = Lieu::findOrFail($enigme->lieu_id);
+            $data['titre'] = $lieu->nom;
+            $data['image'] = $lieu->image_principale;
+        }
 
         // Validation personnalisée : Unicité du niveau pour les énigmes principales d'un lieu
         if (!($data['is_bonus'] ?? false)) {
