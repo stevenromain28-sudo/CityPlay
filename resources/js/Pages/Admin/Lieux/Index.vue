@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -233,6 +233,14 @@ onMounted(() => {
 
     gsap.from('.map-wrapper', { opacity: 0, scale: 0.9, duration: 1, ease: 'expo.out' });
 });
+
+watch(visible, () => {
+    setTimeout(() => {
+        if (map) {
+            map.invalidateSize();
+        }
+    }, 150);
+});
 </script>
 
 <template>
@@ -258,118 +266,128 @@ onMounted(() => {
             </Button>
         </div>
 
-        <!-- Map Container -->
-        <div class="flex-1 bg-white rounded-3xl md:rounded-[3rem] shadow-2xl shadow-blue-100 overflow-hidden border-4 md:border-8 border-white relative map-wrapper min-h-[400px]">
-            <div ref="mapContainer" class="w-full h-full min-h-[400px] md:min-h-[500px] z-0"></div>
+        <!-- Main Split Panel (Map + Form) -->
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-[500px] items-stretch relative">
             
-            <!-- Floating List (Mini Overlay) - Centered at the bottom on mobile, absolute top-right on desktop -->
-            <div class="absolute bottom-4 left-4 right-4 md:bottom-auto md:left-auto md:top-10 md:right-10 z-[1000] w-auto max-w-[calc(100%-2rem)] md:w-80 bg-white/90 backdrop-blur-xl rounded-[2rem] p-4 md:p-6 shadow-2xl border border-white max-h-[35%] md:max-h-[70%] overflow-y-auto custom-scrollbar mx-auto md:mx-0">
-                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 md:mb-6">Liste des points</h3>
-                <div class="space-y-3">
-                    <div v-for="lieu in lieux" :key="lieu.id" @click="editLieu(lieu)" class="p-3 md:p-4 bg-white rounded-xl md:rounded-2xl border border-blue-50 hover:border-[#1DA1F2] cursor-pointer transition-all group font-sans relative overflow-hidden">
-                        <div v-if="lieu.image_principale" class="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <img :src="lieu.image_principale" class="w-full h-full object-cover">
-                        </div>
-                        <div class="relative z-10">
-                            <div class="flex items-center justify-between mb-1.5">
-                                <span class="text-xs md:text-sm font-black italic uppercase text-slate-800 group-hover:text-[#1DA1F2]">{{ lieu.nom }}</span>
-                                <div class="flex items-center space-x-1.5 shrink-0">
-                                    <span v-if="lieu.contenu_culturel" class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
-                                    <span class="px-1.5 py-0.5 bg-blue-50 text-[#1DA1F2] text-[8px] font-black rounded uppercase">N.{{ lieu.difficulte }}</span>
-                                </div>
+            <!-- Map Container Column -->
+            <div class="flex-1 bg-white rounded-3xl md:rounded-[3rem] shadow-2xl shadow-blue-100 overflow-hidden border-4 md:border-8 border-white relative map-wrapper transition-all duration-500">
+                <div ref="mapContainer" class="w-full h-full min-h-[400px] lg:min-h-full z-0"></div>
+                
+                <!-- Floating List (Mini Overlay) - Centered at the bottom on mobile, absolute top-right on desktop -->
+                <div class="absolute bottom-4 left-4 right-4 md:bottom-auto md:left-auto md:top-10 md:right-10 z-[1000] w-auto max-w-[calc(100%-2rem)] md:w-80 bg-white/90 backdrop-blur-xl rounded-[2rem] p-4 md:p-6 shadow-2xl border border-white max-h-[35%] md:max-h-[70%] overflow-y-auto custom-scrollbar mx-auto md:mx-0">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 md:mb-6">Liste des points</h3>
+                    <div class="space-y-3">
+                        <div v-for="lieu in lieux" :key="lieu.id" @click="editLieu(lieu)" class="p-3 md:p-4 bg-white rounded-xl md:rounded-2xl border border-blue-50 hover:border-[#1DA1F2] cursor-pointer transition-all group font-sans relative overflow-hidden">
+                            <div v-if="lieu.image_principale" class="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <img :src="lieu.image_principale" class="w-full h-full object-cover">
                             </div>
-                            <p class="text-[9px] md:text-[10px] text-slate-400 line-clamp-1 font-bold">{{ lieu.description }}</p>
+                            <div class="relative z-10">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span class="text-xs md:text-sm font-black italic uppercase text-slate-800 group-hover:text-[#1DA1F2]">{{ lieu.nom }}</span>
+                                    <div class="flex items-center space-x-1.5 shrink-0">
+                                        <span v-if="lieu.contenu_culturel" class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></span>
+                                        <span class="px-1.5 py-0.5 bg-blue-50 text-[#1DA1F2] text-[8px] font-black rounded uppercase">N.{{ lieu.difficulte }}</span>
+                                    </div>
+                                </div>
+                                <p class="text-[9px] md:text-[10px] text-slate-400 line-clamp-1 font-bold">{{ lieu.description }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Form Dialog (Responsive sizing width: '92vw' on mobile, '50rem' max) -->
-        <Dialog v-model:visible="visible" modal :style="{ width: '92vw', maxWidth: '50rem' }" class="prime-custom-dialog">
-            <template #header>
-                <div class="flex items-center">
-                    <span class="text-2xl md:text-3xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">Config Lieu</span>
-                </div>
-            </template>
-            
-            <form @submit.prevent="submit" class="space-y-4 md:space-y-6 py-2 md:py-4 font-sans px-1 md:px-2 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                <!-- Ville Selection (Only SuperAdmin) -->
-                <div v-if="isSuperAdmin" class="space-y-1.5">
-                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Ville Associée</label>
-                    <select v-model="form.ville_id" class="w-full rounded-xl bg-blue-50/50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all">
-                        <option :value="null">Sélectionner une ville...</option>
-                        <option v-for="v in villes" :key="v.id" :value="v.id">{{ v.nom }}</option>
-                    </select>
-                </div>
+            <!-- Form Side Panel (Only visible when creating/editing) -->
+            <div v-if="visible" class="w-full lg:w-[600px] bg-white rounded-3xl md:rounded-[3rem] shadow-2xl shadow-blue-100 border-4 md:border-8 border-white p-6 md:p-8 flex flex-col justify-between transition-all duration-300 shrink-0 lg:max-h-full overflow-y-auto custom-scrollbar">
                 
-                <div class="space-y-1.5">
-                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Recherche géographique</label>
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une adresse, un monument..." class="flex-1 !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
-                        <Button @click.prevent="searchLocation" class="!px-5 !py-3 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-lg hover:scale-105 transition-transform w-full sm:w-auto justify-center">
-                            <span class="text-white font-black uppercase tracking-widest text-xs">Chercher</span>
+                <!-- Panel Header -->
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                    <span class="text-2xl md:text-3xl font-black italic uppercase text-[#1DA1F2] tracking-tighter">
+                        {{ form.id ? 'Modifier le Lieu' : 'Créer un Lieu' }}
+                    </span>
+                    <button @click="visible = false" class="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <!-- Form Body -->
+                <form @submit.prevent="submit" class="space-y-4 md:space-y-6 font-sans">
+                    <!-- Ville Selection (Only SuperAdmin) -->
+                    <div v-if="isSuperAdmin" class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Ville Associée</label>
+                        <select v-model="form.ville_id" class="w-full rounded-xl bg-blue-50/50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all">
+                            <option :value="null">Sélectionner une ville...</option>
+                            <option v-for="v in villes" :key="v.id" :value="v.id">{{ v.nom }}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Recherche géographique</label>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <InputText v-model="searchQuery" @keydown.enter.prevent="searchLocation" placeholder="Rechercher une adresse, un monument..." class="flex-1 !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                            <Button @click.prevent="searchLocation" class="!px-5 !py-3 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-lg hover:scale-105 transition-transform w-full sm:w-auto justify-center">
+                                <span class="text-white font-black uppercase tracking-widest text-xs">Chercher</span>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Nom du lieu</label>
+                            <InputText v-model="form.nom" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Localisation (Adresse/Quartier)</label>
+                            <InputText v-model="form.localisation" placeholder="Ex: Vieille Ville, Rue de la Paix..." class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Difficulté (1-3)</label>
+                            <InputText v-model="form.difficulte" type="number" min="1" max="3" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Temps estimé (min)</label>
+                            <InputText v-model="form.duree_estimee" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Description</label>
+                        <textarea v-model="form.description" rows="3" class="w-full rounded-xl bg-blue-50/50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white transition-all outline-none"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Latitude</label>
+                            <InputText v-model="form.latitude" class="w-full !rounded-xl !bg-blue-100/20 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold" readonly />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Longitude</label>
+                            <InputText v-model="form.longitude" class="w-full !rounded-xl !bg-blue-100/20 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold" readonly />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Rayon (m)</label>
+                            <InputText v-model="form.rayon" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Image du Lieu</label>
+                        <FileUpload mode="basic" name="image_principale" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Sélectionner une photo" />
+                    </div>
+
+                    <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                        <Button type="submit" :loading="form.processing" class="flex-1 !py-3.5 md:!py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg hover:scale-105 transition-transform justify-center">
+                             <span class="text-base md:text-lg font-black italic uppercase text-white tracking-widest">Enregistrer</span>
+                        </Button>
+                        <Button v-if="form.id" @click.prevent="deleteLieu" class="sm:w-auto !px-6 md:!px-8 !py-3.5 md:!py-5 !bg-red-500 hover:!bg-red-600 !border-none !rounded-2xl !shadow-lg transition-colors justify-center">
+                             <span class="text-base md:text-lg font-black italic uppercase text-white tracking-widest">Supprimer</span>
                         </Button>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Nom du lieu</label>
-                        <InputText v-model="form.nom" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Localisation (Adresse/Quartier)</label>
-                        <InputText v-model="form.localisation" placeholder="Ex: Vieille Ville, Rue de la Paix..." class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Difficulté (1-3)</label>
-                        <InputText v-model="form.difficulte" type="number" min="1" max="3" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Temps estimé (min)</label>
-                        <InputText v-model="form.duree_estimee" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
-                    </div>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Description</label>
-                    <textarea v-model="form.description" rows="3" class="w-full rounded-xl bg-blue-50/50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white transition-all outline-none"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Latitude</label>
-                        <InputText v-model="form.latitude" class="w-full !rounded-xl !bg-blue-100/20 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold" readonly />
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Longitude</label>
-                        <InputText v-model="form.longitude" class="w-full !rounded-xl !bg-blue-100/20 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold" readonly />
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Rayon (m)</label>
-                        <InputText v-model="form.rayon" type="number" class="w-full !rounded-xl !bg-blue-50/50 !border !border-blue-100 !p-3 md:!p-4 !text-sm md:!text-base !font-bold focus:!bg-white" />
-                    </div>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-2">Image du Lieu</label>
-                    <FileUpload mode="basic" name="image_principale" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Sélectionner une photo" />
-                </div>
-
-                <div class="pt-4 flex flex-col sm:flex-row gap-3">
-                    <Button type="submit" :loading="form.processing" class="flex-1 !py-3.5 md:!py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-lg hover:scale-105 transition-transform justify-center">
-                         <span class="text-base md:text-lg font-black italic uppercase text-white tracking-widest">Enregistrer</span>
-                    </Button>
-                    <Button v-if="form.id" @click.prevent="deleteLieu" class="sm:w-auto !px-6 md:!px-8 !py-3.5 md:!py-5 !bg-red-500 hover:!bg-red-600 !border-none !rounded-2xl !shadow-lg transition-colors justify-center">
-                         <span class="text-base md:text-lg font-black italic uppercase text-white tracking-widest">Supprimer</span>
-                    </Button>
-                </div>
-            </form>
-        </Dialog>
+                </form>
+            </div>
+        </div>
 
         <!-- CUSTOM NOTIFICATION MODAL -->
         <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">

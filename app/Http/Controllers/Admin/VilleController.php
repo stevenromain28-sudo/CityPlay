@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ville;
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ class VilleController extends Controller
         if ($isSuperAdmin) {
             return Inertia::render('Admin/Villes/Index', [
                 'villes' => Ville::withCount('lieux')->with('user')->get(),
-                'admins' => \App\Models\User::role('admin')->get(),
+                'admins' => User::role('admin')->get(),
                 'isSuperAdmin' => true
             ]);
         }
