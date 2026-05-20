@@ -231,14 +231,14 @@ onUnmounted(() => {
             <!-- IMMERSIVE STORY CINEMATIC OVERLAY -->
             <div v-if="activeStory" class="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-2 md:p-6 bg-slate-950/95 backdrop-blur-md">
                 
-                <!-- Close Button -->
-                <button @click="closeStory" 
-                        class="absolute top-4 right-4 z-[1020] bg-red-600 hover:bg-red-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 border-2 border-white/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-
                 <!-- Majestic ancient vertical scroll roll wrapper -->
                 <div class="grimoire-parchment relative w-full max-w-2xl h-[78vh] flex flex-col justify-between overflow-hidden origin-center">
+                    
+                    <!-- Close Button (à l'intérieur du conteneur du parchemin) -->
+                    <button @click="closeStory" 
+                            class="absolute top-8 right-2 z-[1020] bg-amber-700 hover:bg-amber-800 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 border-2 border-amber-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                     
                     <!-- Top Scroll Cylinder Roll -->
                     <div class="h-6 bg-gradient-to-r from-amber-900 via-amber-600 to-amber-900 rounded-full shadow-lg border-2 border-amber-950 flex justify-between px-6 items-center relative z-20">
