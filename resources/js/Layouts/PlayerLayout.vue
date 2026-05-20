@@ -20,6 +20,8 @@ const tempsRestant = ref(0);
 const sessionStatut = ref(null);
 let timerInterval = null;
 let heartbeatInterval = null;
+let heartbeatRequestId = 0;
+let lastHeartbeatAppliedId = 0;
 let lastSyncTime = 0;
 
 const formatTemps = (secondes) => {
@@ -31,14 +33,10 @@ const formatTemps = (secondes) => {
 
 const updateTimerFromSession = () => {
     if (activeSession.value) {
-        const serverTime = activeSession.value.temps_restant;
+        const serverTime = Number(activeSession.value.temps_restant) || 0;
         sessionStatut.value = activeSession.value.statut;
-        
-        // Synchronisation si dérive > 2s pour plus de précision "normale"
-        if (lastSyncTime === 0 || Math.abs(tempsRestant.value - serverTime) > 2) {
-            tempsRestant.value = serverTime;
-            lastSyncTime = Date.now();
-        }
+        tempsRestant.value = serverTime;
+        lastSyncTime = Date.now();
 
         if (sessionStatut.value === 'actif') {
             startTimer();
@@ -65,20 +63,23 @@ const updateTimerFromSession = () => {
 };
 
 const startTimer = () => {
-    // On nettoie l'ancien intervalle s'il existe pour éviter les doublons
     if (timerInterval) clearInterval(timerInterval);
-    
+
     timerInterval = setInterval(() => {
-        // On vérifie directement sur activeSession pour plus de sécurité
-        if (sessionStatut.value === 'actif' && tempsRestant.value > 0) {
-            tempsRestant.value--;
-        } else if (tempsRestant.value <= 0 && sessionStatut.value === 'actif') {
+        if (sessionStatut.value !== 'actif') {
+            stopTimer();
+            return;
+        }
+
+        if (tempsRestant.value <= 1) {
+            tempsRestant.value = 0;
             sessionStatut.value = 'temps_epuise';
             handleTimeUp();
             stopTimer();
-        } else {
-            stopTimer();
+            return;
         }
+
+        tempsRestant.value--;
     }, 1000);
 };
 
@@ -92,25 +93,42 @@ const stopTimer = () => {
 const startHeartbeat = () => {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(async () => {
-        if (activeSession.value && (sessionStatut.value === 'actif' || sessionStatut.value === 'temps_epuise' || sessionStatut.value === 'pause')) {
-            try {
-                const response = await axios.post(route('player.sessions.heartbeat', activeSession.value.id));
-                const serverTime = response.data.temps_restant;
-                
-                // Sync si dérive importante
-                if (Math.abs(tempsRestant.value - serverTime) > 3) {
-                    tempsRestant.value = serverTime;
-                }
-                
-                sessionStatut.value = response.data.statut;
-                if (sessionStatut.value === 'temps_epuise') {
+        if (!activeSession.value || !['actif', 'temps_epuise', 'pause'].includes(sessionStatut.value)) {
+            return;
+        }
+
+        const requestId = ++heartbeatRequestId;
+
+        try {
+            const response = await axios.post(route('player.sessions.heartbeat', activeSession.value.id));
+            if (requestId < lastHeartbeatAppliedId) {
+                return;
+            }
+
+            lastHeartbeatAppliedId = requestId;
+            const serverTime = Number(response.data.temps_restant) || 0;
+
+            tempsRestant.value = serverTime;
+            sessionStatut.value = response.data.statut;
+            lastSyncTime = Date.now();
+
+            if (sessionStatut.value === 'actif') {
+                startTimer();
+                showPauseModal.value = false;
+                showTimeUpModal.value = false;
+            } else {
+                stopTimer();
+                if (sessionStatut.value === 'pause') {
+                    showPauseModal.value = true;
+                    showTimeUpModal.value = false;
+                } else if (sessionStatut.value === 'temps_epuise') {
                     handleTimeUp();
                 }
-            } catch (error) {
-                console.error("Heartbeat error", error);
             }
+        } catch (error) {
+            console.error('Heartbeat error', error);
         }
-    }, 30000);
+    }, 10000);
 };
 
 const showTimeUpModal = ref(false);
@@ -212,9 +230,9 @@ onUnmounted(() => {
 
                 <!-- Right HUD (Unified Stats & Timer) -->
                 <div class="flex items-center pointer-events-none">
-                    <div v-if="activeSession || $page.props.auth.user" 
+                    <div v-if="activeSession || $page.props.auth.user"
                          class="pointer-events-auto flex items-center bg-black/40 backdrop-blur-xl border-2 border-white/10 rounded-[2rem] p-1.5 shadow-2xl transition-all duration-500 hover:border-white/20">
-                        
+
                         <!-- Player Stats -->
                         <div class="flex items-center space-x-3 pl-1 pr-4 py-1">
                             <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-tr from-yellow-400 to-yellow-600 p-0.5 shadow-lg">
@@ -232,7 +250,7 @@ onUnmounted(() => {
                         <div v-if="activeSession" class="h-10 w-[1px] bg-white/10 mx-1"></div>
 
                         <!-- Global Timer -->
-                        <div v-if="activeSession" 
+                        <div v-if="activeSession"
                              class="flex items-center gap-3 px-4 py-1 transition-all duration-300"
                              :class="tempsRestant < 300 ? 'text-red-500 animate-pulse' : 'text-blue-400'">
                             <button @click="togglePause" class="hover:scale-110 active:scale-95 transition-transform text-white/80 hover:text-white">
@@ -265,7 +283,7 @@ onUnmounted(() => {
                 </div>
                 <h3 class="text-4xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Temps Épuisé !</h3>
                 <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Votre quête est suspendue. Souhaitez-vous continuer ?</p>
-                
+
                 <div class="flex flex-col gap-4">
                     <button @click="ajouterTemps(15)" class="w-full py-5 bg-[#7C3AED] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-purple-500/30 hover:scale-105 transition-all">
                         Continuer (+15 min)
@@ -286,7 +304,7 @@ onUnmounted(() => {
                 </div>
                 <h3 class="text-5xl font-black italic uppercase text-slate-800 mb-4 tracking-tighter">PAUSE</h3>
                 <p class="text-slate-500 font-bold mb-10 uppercase text-xs tracking-[0.2em]">Le temps est suspendu...</p>
-                
+
                 <button @click="togglePause" class="group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-b from-yellow-300 to-yellow-500 p-[2px] shadow-[0_10px_40px_-10px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95 transition-transform">
                     <div class="relative w-full rounded-[1.9rem] bg-gradient-to-b from-yellow-400 to-yellow-600 px-8 py-6 flex items-center justify-center border-t border-yellow-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mr-4 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -305,7 +323,7 @@ onUnmounted(() => {
                 </div>
                 <h3 class="text-3xl font-black italic uppercase text-slate-800 mb-2 tracking-tighter">Déconnexion ?</h3>
                 <p class="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Voulez-vous vraiment quitter l'aventure ?</p>
-                
+
                 <div class="flex gap-4">
                     <button @click="cancelLogout" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
                         Annuler
