@@ -3,6 +3,7 @@ import PlayerLayout from '@/Layouts/PlayerLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { onMounted, computed, ref } from 'vue';
 import gsap from 'gsap';
+import { useGameStore } from '@/Stores/game';
 
 const props = defineProps({
     ville: Object,
@@ -18,6 +19,7 @@ const props = defineProps({
 const page = usePage();
 const activeSession = computed(() => page.props.active_session);
 const mainEnigmes = computed(() => props.enigmes.filter(e => !e.is_bonus));
+const gameStore = useGameStore();
 
 const scrollToChallenges = () => {
     const el = document.getElementById('challenges-section');
@@ -30,6 +32,9 @@ const jouerEnigme = (enigme) => {
     console.log('=== jouerEnigme ===');
     console.log('activeSession.value:', activeSession.value);
     console.log('enigme:', enigme);
+    
+    // Démarrer le timer du lieu
+    gameStore.entrerDansLieu(props.lieu);
     
     const urlParams = new URLSearchParams(window.location.search);
     const lat = urlParams.get('lat');

@@ -196,7 +196,7 @@ class PlayerController extends Controller
 
         // 1. Vérifier si une énigme spécifique est déjà définie dans la session
         if ($session->current_enigme_id) {
-            $enigme = Enigme::with('indices')->find($session->current_enigme_id);
+            $enigme = Enigme::with('indices', 'lieu')->find($session->current_enigme_id);
             // Vérifier si elle est déjà résolue par le joueur OU par l'équipe
             $dejaResolue = false;
             if ($equipe) {
@@ -238,7 +238,8 @@ class PlayerController extends Controller
 
             if ($bonusEnCours) {
                 if ($equipe) {
-                    $bonusQuery = Enigme::where('lieu_id', $bonusEnCours->enigme->lieu_id)
+                    $bonusQuery = Enigme::with('lieu', 'indices')
+                        ->where('lieu_id', $bonusEnCours->enigme->lieu_id)
                         ->where('is_bonus', true)
                         ->whereDoesntHave('tentatives', function($q) use ($equipe) {
                             $q->whereHas('user', function($q2) use ($equipe) {
@@ -247,7 +248,8 @@ class PlayerController extends Controller
                         })
                         ->orderBy('ordre');
                 } else {
-                    $bonusQuery = Enigme::where('lieu_id', $bonusEnCours->enigme->lieu_id)
+                    $bonusQuery = Enigme::with('lieu', 'indices')
+                        ->where('lieu_id', $bonusEnCours->enigme->lieu_id)
                         ->where('is_bonus', true)
                         ->whereDoesntHave('tentatives', function($q) use ($user) {
                             $q->where('user_id', $user->id)->where('succes', true);

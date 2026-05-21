@@ -219,6 +219,11 @@ onMounted(() => {
     gameStore.setSession(props.session);
     if (props.enigme) {
         gameStore.enigmeActive = props.enigme;
+        
+        // Initialiser le timer du lieu
+        if (props.enigme.lieu) {
+            gameStore.entrerDansLieu(props.enigme.lieu);
+        }
     }
 
     // Initialiser la carte si on est déjà à l'étape GPS
