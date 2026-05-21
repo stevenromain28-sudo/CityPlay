@@ -81,14 +81,7 @@ const triggerNotify = (type, title, message) => {
     notifyModal.value = { show: true, type, title, message };
 };
 
-import { watch } from 'vue';
-
-const selectedCityId = ref(null);
 const invitationLink = ref('');
-
-watch(selectedCityId, () => {
-    invitationLink.value = '';
-});
 
 const generateLink = () => {
     if (invitationLink.value) {
@@ -96,20 +89,9 @@ const generateLink = () => {
         triggerNotify('success', 'Lien Copié', 'Le lien d\'invitation a été copié dans votre presse-papier !');
         return;
     }
-    
-    let targetCityId = null;
-    if (props.ma_ville) {
-        targetCityId = props.ma_ville.id;
-    } else if (selectedCityId.value) {
-        targetCityId = selectedCityId.value;
-    }
 
-    if (!targetCityId) {
-        triggerNotify('error', 'Sélection Requise', 'Veuillez sélectionner une ville pour générer le lien d\'invitation.');
-        return;
-    }
-
-    invitationLink.value = window.location.origin + '/play/join-city/' + targetCityId;
+    // Lien vers l'application en général (pas vers une ville spécifique)
+    invitationLink.value = window.location.origin;
     
     // Copy automatically on first generation
     setTimeout(() => {
@@ -317,17 +299,6 @@ const generateLink = () => {
                             </div>
                         </div>
                         <div class="flex flex-col sm:flex-row items-end gap-4 w-full xl:w-auto">
-                            <!-- Dropdown de sélection pour Super Admin -->
-                            <div v-if="$page.props.auth.user.roles.includes('super_admin')" class="w-full sm:w-60 flex flex-col space-y-1">
-                                <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider ml-1">Ville cible</span>
-                                <select v-model="selectedCityId" class="w-full bg-blue-50 border-none rounded-xl py-3 px-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#1DA1F2] transition-all">
-                                    <option :value="null" disabled>Choisir une ville...</option>
-                                    <option v-for="ville in villes" :key="ville.id" :value="ville.id">
-                                        {{ ville.nom }}
-                                    </option>
-                                </select>
-                            </div>
-
                             <div class="w-full sm:w-96 bg-blue-50 rounded-xl md:rounded-2xl px-4 py-3 md:px-6 md:py-4 font-bold text-slate-400 text-[10px] md:text-xs truncate border-2 border-dashed border-blue-100 text-center flex items-center justify-center min-h-[46px]">
                                 {{ invitationLink || 'CLIQUEZ SUR GÉNÉRER' }}
                             </div>
