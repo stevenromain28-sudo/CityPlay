@@ -2,10 +2,10 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
 export const useGameStore = defineStore('game', () => {
-    // State - Session Global
+    // State - Session Global (Frontend est le seul maître !)
     const session = ref(null);
     const joueursConnectes = ref([]);
-    const tempsSessionRestant = ref(0); // Temps global de la session (choisi par le joueur)
+    const tempsSessionRestant = ref(0); // Temps global de la session
     const sessionTimerInterval = ref(null);
 
     // State - Lieu Actuel
@@ -33,14 +33,20 @@ export const useGameStore = defineStore('game', () => {
     function setSession(newSession) {
         session.value = newSession;
         
-        if (!sessionTimerInterval.value || Math.abs(tempsSessionRestant.value - newSession.temps_restant) > 2) {
+        // On initialise le temps FRONTEND avec la valeur de la session, SANS RECALCUL !
+        if (tempsSessionRestant.value === 0 || tempsSessionRestant.value !== newSession.temps_restant) {
             tempsSessionRestant.value = newSession.temps_restant;
         }
 
         if (newSession.statut === 'actif') {
             startSessionTimer();
+            // Si on a un lieu actif, redémarrer aussi le timer du lieu
+            if (lieuActuel.value) {
+                startLieuTimer();
+            }
         } else {
             stopSessionTimer();
+            stopLieuTimer();
         }
     }
 
@@ -105,7 +111,12 @@ export const useGameStore = defineStore('game', () => {
     }
 
     function syncTempsForce(serverSeconds) {
+        // On garde cette fonction pour les cas où on doit vraiment recaler (ex: ajouter du temps)
         tempsSessionRestant.value = serverSeconds;
+    }
+
+    function updateJoueurs(users) {
+        joueursConnectes.value = users;
     }
 
     return {
@@ -119,6 +130,7 @@ export const useGameStore = defineStore('game', () => {
         startSessionTimer,
         stopSessionTimer,
         syncTempsForce,
+        updateJoueurs,
         
         // Lieu
         enigmeActive,

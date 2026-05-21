@@ -124,16 +124,13 @@ class SessionJeuService
     }
 
     /**
-     * Mettre en pause la session.
+     * Mettre en pause la session : le frontend est le maître du temps, on ne calcule pas.
      */
     public function mettreEnPause(SessionJeu $session): bool
     {
         if ($session->statut !== 'actif') {
             return false;
         }
-
-        // On calcule le temps restant avant de mettre en pause
-        $this->calculerTempsRestant($session);
 
         return $session->update(['statut' => 'pause']);
     }

@@ -84,11 +84,10 @@ const startHeartbeat = () => {
     heartbeatInterval = setInterval(async () => {
         if (activeSession.value && gameStore.session?.statut === 'actif') {
             try {
-                const response = await axios.post(route('player.sessions.heartbeat', activeSession.value.id));
-                
-                if (Math.abs(gameStore.tempsSessionRestant - response.data.temps_restant) > 3) {
-                    gameStore.syncTempsForce(response.data.temps_restant);
-                }
+                // Envoyer le temps du FRONTEND (qui est le maître) vers le backend
+                const response = await axios.post(route('player.sessions.heartbeat', activeSession.value.id), {
+                    temps_restant: gameStore.tempsSessionRestant
+                });
                 
                 if (response.data.statut === 'temps_epuise') {
                     showTimeUpSessionModal.value = true;
@@ -103,7 +102,17 @@ const startHeartbeat = () => {
 
 const togglePause = () => {
     const action = gameStore.session?.statut === 'actif' ? 'pause' : 'reprendre';
-    router.post(route('player.sessions.status', activeSession.value.id), { action }, {
+    
+    // Arrêter TOUS les timers immédiatement
+    if (action === 'pause') {
+        gameStore.stopSessionTimer();
+        gameStore.stopLieuTimer();
+    }
+    
+    router.post(route('player.sessions.status', activeSession.value.id), { 
+        action,
+        temps_restant: gameStore.tempsSessionRestant
+    }, {
         preserveScroll: true,
         onSuccess: () => {
             router.reload({ only: ['active_session'] });
@@ -121,11 +130,16 @@ const ajouterTemps = (minutes) => {
 };
 
 const terminerPartie = () => {
-    router.post(route('player.sessions.status', activeSession.value.id), { action: 'terminer' }, {
+    // Arrêter TOUS les timers immédiatement
+    gameStore.stopSessionTimer();
+    gameStore.stopLieuTimer();
+    
+    router.post(route('player.sessions.status', activeSession.value.id), { 
+        action: 'terminer',
+        temps_restant: gameStore.tempsSessionRestant
+    }, {
         onSuccess: () => {
             showTimeUpSessionModal.value = false;
-            gameStore.stopSessionTimer();
-            gameStore.stopLieuTimer();
             router.visit(route('player.dashboard'));
         }
     });

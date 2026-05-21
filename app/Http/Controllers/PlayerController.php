@@ -187,10 +187,7 @@ class PlayerController extends Controller
         $lng = (float) $request->query('lng');
         $equipe = $user->equipe;
 
-        // Synchroniser le temps avant de charger la page
-        if (method_exists($this->sessionService, 'calculerTempsRestant')) {
-            $this->sessionService->calculerTempsRestant($session);
-        }
+        // Aucun recalcul : le frontend est le seul maître du temps
         
         $enigme = null;
 
