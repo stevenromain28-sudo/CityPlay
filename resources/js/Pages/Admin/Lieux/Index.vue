@@ -66,11 +66,23 @@ const form = useForm({
 });
 
 const searchQuery = ref('');
+const ignoreNextError = ref(false); // Pour ignorer le watcher quand on réinitialise le form
 
 const openNew = () => {
+    ignoreNextError.value = true;
     form.reset();
+    form.clearErrors(); // Réinitialiser les erreurs
+    searchQuery.value = ''; // Vider la recherche
     form.id = null;
+    form.nom = '';
+    form.description = '';
+    form.localisation = '';
     form.ville_id = props.ville?.id || null;
+    form.rayon = 50;
+    form.difficulte = 1;
+    form.duree_estimee = 30;
+    form.image_principale = null;
+    
     if (tempMarker) {
         form.latitude = tempMarker.getLatLng().lat;
         form.longitude = tempMarker.getLatLng().lng;
@@ -78,10 +90,13 @@ const openNew = () => {
         form.latitude = props.ville?.latitude || 45.8992;
         form.longitude = props.ville?.longitude || 6.1264;
     }
+    
     visible.value = true;
 };
 
 const editLieu = (lieu) => {
+    ignoreNextError.value = true;
+    form.clearErrors(); // Réinitialiser les erreurs
     form.id = lieu.id;
     form.nom = lieu.nom;
     form.description = lieu.description;
@@ -244,6 +259,11 @@ watch(visible, () => {
 
 // Watcher pour afficher les erreurs dans le modal
 watch(() => form.errors, (newErrors) => {
+    if (ignoreNextError.value) {
+        ignoreNextError.value = false;
+        return;
+    }
+    
     if (newErrors && Object.keys(newErrors).length > 0) {
         // Récupérer la première erreur
         const firstErrorKey = Object.keys(newErrors)[0];
