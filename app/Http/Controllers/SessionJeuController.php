@@ -97,6 +97,10 @@ class SessionJeuController extends Controller
 
         switch ($action) {
             case 'pause':
+                // Sauvegarder le temps restant du frontend avant de mettre en pause
+                if ($request->has('temps_restant')) {
+                    $session->update(['temps_restant' => $request->input('temps_restant')]);
+                }
                 $this->sessionService->mettreEnPause($session);
                 break;
             case 'reprendre':
@@ -106,6 +110,10 @@ class SessionJeuController extends Controller
                 $session->update(['statut' => 'temps_epuise', 'temps_restant' => 0]);
                 break;
             case 'terminer':
+                // Sauvegarder le temps restant du frontend avant de terminer
+                if ($request->has('temps_restant')) {
+                    $session->update(['temps_restant' => $request->input('temps_restant')]);
+                }
                 $this->sessionService->terminerSession($session);
                 return redirect()->route('player.dashboard');
         }
@@ -114,14 +122,20 @@ class SessionJeuController extends Controller
     }
 
     /**
-     * Synchroniser le temps restant (Heartbeat).
+     * Synchroniser le temps restant (Heartbeat) : Frontend envoie son temps, on l'enregistre.
      */
-    public function heartbeat(SessionJeu $session)
+    public function heartbeat(Request $request, SessionJeu $session)
     {
-        $tempsRestant = $this->sessionService->calculerTempsRestant($session);
+        $request->validate([
+            'temps_restant' => 'required|integer|min:0'
+        ]);
+
+        $session->update([
+            'temps_restant' => $request->input('temps_restant'),
+            'dernier_calcul_at' => now()
+        ]);
 
         return response()->json([
-            'temps_restant' => $tempsRestant,
             'statut' => $session->statut
         ]);
     }

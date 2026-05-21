@@ -5,12 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Lieu;
 use App\Models\Ville;
+use App\Services\GPSService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
 class LieuController extends Controller
 {
+    protected $gpsService;
+
+    public function __construct(GPSService $gpsService)
+    {
+        $this->gpsService = $gpsService;
+    }
+
     public function index()
     {
         $isSuperAdmin = auth()->user()->hasRole('super_admin');
@@ -61,14 +69,34 @@ class LieuController extends Controller
 
         $request->validate($rules);
 
-        $data = $request->all();
-
         if ($isSuperAdmin) {
-            $data['ville_id'] = $request->ville_id;
+            $ville = Ville::findOrFail($request->ville_id);
         } else {
             $ville = Ville::where('user_id', auth()->id())->firstOrFail();
-            $data['ville_id'] = $ville->id;
         }
+
+        // Vérifier la position si la ville a latitude, longitude et rayon_action
+        if ($ville->latitude && $ville->longitude && $ville->rayon_action) {
+            // Convertir le rayon en mètres (si c'est en km, comme dans le front)
+            $rayonEnMetres = $ville->rayon_action * 1000;
+            
+            $estDansRayon = $this->gpsService->validerPosition(
+                $request->latitude,
+                $request->longitude,
+                $ville->latitude,
+                $ville->longitude,
+                $rayonEnMetres
+            );
+
+            if (!$estDansRayon) {
+                return redirect()->back()
+                    ->withErrors(['latitude' => "Ce lieu est trop éloigné de la ville ! Le rayon d'action maximum est de {$ville->rayon_action} km."])
+                    ->withInput();
+            }
+        }
+
+        $data = $request->all();
+        $data['ville_id'] = $ville->id;
 
         if ($request->hasFile('image_principale')) {
             $path = $request->file('image_principale')->store('lieux/images', 'public');
@@ -101,6 +129,32 @@ class LieuController extends Controller
         }
 
         $request->validate($rules);
+
+        if ($isSuperAdmin) {
+            $ville = Ville::findOrFail($request->ville_id);
+        } else {
+            $ville = Ville::where('user_id', auth()->id())->firstOrFail();
+        }
+
+        // Vérifier la position si la ville a latitude, longitude et rayon_action
+        if ($ville->latitude && $ville->longitude && $ville->rayon_action) {
+            // Convertir le rayon en mètres (si c'est en km, comme dans le front)
+            $rayonEnMetres = $ville->rayon_action * 1000;
+            
+            $estDansRayon = $this->gpsService->validerPosition(
+                $request->latitude,
+                $request->longitude,
+                $ville->latitude,
+                $ville->longitude,
+                $rayonEnMetres
+            );
+
+            if (!$estDansRayon) {
+                return redirect()->back()
+                    ->withErrors(['latitude' => "Ce lieu est trop éloigné de la ville ! Le rayon d'action maximum est de {$ville->rayon_action} km."])
+                    ->withInput();
+            }
+        }
 
         $data = $request->all();
 

@@ -168,7 +168,14 @@ const searchQuery = ref('');
 
 const initMap = () => {
     if (!mapContainer.value) return;
-    
+    // --- FORCE LEAFLET A UTILISER DES SITES DE CONFIANCE (CDN) PLUTÔT QUE LES DOSSIERS CASSÉS ---
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+    //
     const lat = form.latitude || 48.8566;
     const lng = form.longitude || 2.3522;
     

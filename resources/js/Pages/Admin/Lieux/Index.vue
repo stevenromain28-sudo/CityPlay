@@ -66,11 +66,23 @@ const form = useForm({
 });
 
 const searchQuery = ref('');
+const ignoreNextError = ref(false); // Pour ignorer le watcher quand on réinitialise le form
 
 const openNew = () => {
+    ignoreNextError.value = true;
     form.reset();
+    form.clearErrors(); // Réinitialiser les erreurs
+    searchQuery.value = ''; // Vider la recherche
     form.id = null;
+    form.nom = '';
+    form.description = '';
+    form.localisation = '';
     form.ville_id = props.ville?.id || null;
+    form.rayon = 50;
+    form.difficulte = 1;
+    form.duree_estimee = 30;
+    form.image_principale = null;
+    
     if (tempMarker) {
         form.latitude = tempMarker.getLatLng().lat;
         form.longitude = tempMarker.getLatLng().lng;
@@ -78,10 +90,13 @@ const openNew = () => {
         form.latitude = props.ville?.latitude || 45.8992;
         form.longitude = props.ville?.longitude || 6.1264;
     }
+    
     visible.value = true;
 };
 
 const editLieu = (lieu) => {
+    ignoreNextError.value = true;
+    form.clearErrors(); // Réinitialiser les erreurs
     form.id = lieu.id;
     form.nom = lieu.nom;
     form.description = lieu.description;
@@ -241,6 +256,24 @@ watch(visible, () => {
         }
     }, 150);
 });
+
+// Watcher pour afficher les erreurs dans le modal
+watch(() => form.errors, (newErrors) => {
+    if (ignoreNextError.value) {
+        ignoreNextError.value = false;
+        return;
+    }
+    
+    if (newErrors && Object.keys(newErrors).length > 0) {
+        // Récupérer la première erreur
+        const firstErrorKey = Object.keys(newErrors)[0];
+        const firstErrorMessage = Array.isArray(newErrors[firstErrorKey]) 
+            ? newErrors[firstErrorKey][0] 
+            : newErrors[firstErrorKey];
+        
+        triggerNotify('error', 'Erreur de validation', firstErrorMessage);
+    }
+}, { deep: true });
 </script>
 
 <template>
@@ -392,20 +425,49 @@ watch(visible, () => {
         <!-- CUSTOM NOTIFICATION MODAL -->
         <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+            <div 
+                class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
+                :class="[
+                    notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : '',
+                    notifyModal.type === 'error' ? 'border-red-300 bg-gradient-to-br from-red-400 to-red-600' : ''
+                ]"
+            >
                 <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    <div 
+                        class="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
+                        :class="[
+                            notifyModal.type === 'success' ? 'bg-green-50 text-green-500' : '',
+                            notifyModal.type === 'error' ? 'bg-red-50 text-red-500' : ''
+                        ]"
+                    >
+                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <svg v-if="notifyModal.type === 'error'" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                    <h3 
+                        class="text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
+                        :class="[
+                            notifyModal.type === 'success' ? 'text-green-600' : '',
+                            notifyModal.type === 'error' ? 'text-red-600' : ''
+                        ]"
+                    >
                         {{ notifyModal.title }}
                     </h3>
                     
                     <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
 
-                    <button @click="notifyModal.show = false" 
-                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                    <button 
+                        @click="notifyModal.show = false" 
+                        class="w-full py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10"
+                        :class="[
+                            notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : '',
+                            notifyModal.type === 'error' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : ''
+                        ]"
+                    >
                         D'accord
                     </button>
                 </div>
