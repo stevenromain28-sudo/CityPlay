@@ -274,9 +274,9 @@ const validerGPS = () => {
 
                     if (response.data.show_choice) {
                         showBonusChoice.value = true;
-                        showModal('success', 'Énigme Complétée !', response.data.message, response.data.content, true);
+                        showModal('success', 'Énigme Complétée !', response.data.message, null, true);
                     } else {
-                        showModal('success', 'Énigme Résolue !', response.data.message, response.data.content);
+                        showModal('success', 'Énigme Résolue !', response.data.message);
                     }
                 }
             } catch (error) {
@@ -466,7 +466,7 @@ const isIndiceUnlocked = (indiceId) => {
                                     Lieu suivant
                                 </button>
                                 <button @click="faireChoixBonus(true)" class="px-10 py-5 rpg-btn-yellow text-white rounded-xl font-black uppercase tracking-widest shadow-xl">
-                                    En savoir plus (Bonus)
+                                    Egnime Bonus
                                 </button>
                             </div>
                         </div>
@@ -557,7 +557,7 @@ const isIndiceUnlocked = (indiceId) => {
                             Lieu suivant
                         </button>
                         <button @click="faireChoixBonus(true)" class="flex-1 py-5 bg-[#7C3AED] text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-purple-700 transition-all">
-                            En savoir plus
+                            Egnime Bonus
                         </button>
                     </div>
                     <button v-else @click="closeModal('reload')"

@@ -328,7 +328,6 @@ class GameplayController extends Controller
             'message' => $message,
             'gps_validated' => true,
             'score_gagne' => $scoreGagne,
-            'content' => $enigme->lieu->contenuCulturel,
             'show_choice' => true,
             'equipe' => $equipe
         ]);
