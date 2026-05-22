@@ -292,20 +292,27 @@ watch(() => form.errors, (newErrors) => {
 <template>
     <Head title="Gestion des Lieux - Admin" />
 
-    <div class="min-h-screen bg-[#F0F7FF] font-sans flex relative overflow-x-hidden">
-        <!-- Mobile Sidebar Overlay -->
-        <div v-if="isMobileMenuOpen" 
-             @click="isMobileMenuOpen = false"
-             class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"></div>
+    <div ref="dashboardContainer" class="min-h-screen bg-[#F0F7FF] text-slate-800 flex overflow-hidden font-sans relative">
+        <!-- Animated Background Slides -->
+        <div class="absolute inset-0 z-0 opacity-5 pointer-events-none overflow-hidden">
+            <div class="bg-slide flex w-[200%] h-full">
+                <img src="/images/backgrounds/city.png" class="w-1/2 h-full object-cover">
+                <img src="/images/backgrounds/img2.jpg" class="w-1/2 h-full object-cover">
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div v-if="isMobileMenuOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] md:hidden transition-opacity" @click="isMobileMenuOpen = false"></div>
 
         <!-- Sidebar -->
-        <aside :class="[
-            'bg-[#1DA1F2] flex flex-col items-center py-8 md:py-12 px-2 md:px-4 shrink-0 sticky top-0 h-screen transition-all duration-300 z-50',
-            isMobileMenuOpen ? 'fixed left-0 w-24 md:w-32 translate-x-0' : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-24 md:w-32'
-        ]">
-            <div class="mb-12 md:mb-20">
-                <div class="w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl md:rounded-[2rem] shadow-2xl flex items-center justify-center transform -rotate-12">
-                    <span class="text-[#1DA1F2] text-2xl md:text-4xl font-black italic">C</span>
+                        <aside :class="{'translate-x-0': isMobileMenuOpen, '-translate-x-full': !isMobileMenuOpen}"
+               class="fixed md:relative inset-y-0 left-0 flex w-24 lg:w-32 bg-[#1DA1F2] flex-col items-center pt-10 pb-6 md:py-10 shadow-[5px_0_30px_rgba(29,161,242,0.1)] z-[100] transition-transform duration-300 ease-in-out md:translate-x-0 overflow-x-hidden md:overflow-x-visible overflow-y-auto md:overflow-y-visible no-scrollbar">
+            <div class="mb-10 md:mb-16 shrink-0">
+                <div class="w-16 h-16 bg-yellow-400 rounded-3xl flex items-center justify-center shadow-xl rotate-3 hover:rotate-0 transition-transform duration-300">
+                    <!-- Eiffel Tower / City Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.5,2H11.5L11,5H13L12.5,2M13.5,6H10.5L10,12H14L13.5,6M15,13H9L8,22H10L10.5,18H13.5L14,22H16L15,13Z" />
+                    </svg>
                 </div>
             </div>
 
@@ -326,6 +333,9 @@ watch(() => form.errors, (newErrors) => {
                         <svg v-if="item.icon==='culture'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                         <svg v-if="item.icon==='users'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     </div>
+                    <span class="absolute left-full ml-6 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
+                        {{ item.label }}
+                    </span>
                 </Link>
             </nav>
 
