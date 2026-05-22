@@ -106,6 +106,11 @@ Route::middleware(['auth', 'role:player'])->prefix('play')->name('player.')->gro
     Route::post('/sessions/{session}/heartbeat', [SessionJeuController::class, 'heartbeat'])->name('sessions.heartbeat');
     Route::post('/sessions/{session}/add-time', [SessionJeuController::class, 'addTime'])->name('sessions.add-time');
 
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\Player\NotificationController::class, 'index'])->name('notifications.index');
+    Route::delete('/notifications/clear', [\App\Http\Controllers\Player\NotificationController::class, 'clearAll'])->name('notifications.clear');
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Player\NotificationController::class, 'destroy'])->name('notifications.destroy');
+
     // Gameplay
     Route::prefix('game/{session}')->name('game.')->group(function () {
         Route::get('/', [PlayerController::class, 'jeu'])->name('jeu');

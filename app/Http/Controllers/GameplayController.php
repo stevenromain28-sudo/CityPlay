@@ -14,6 +14,7 @@ use App\Models\Indice;
 use App\Models\IndiceDebloque;
 use App\Models\JoueurSession;
 use App\Models\ProgressionEnigme;
+use App\Notifications\GameNotification;
 use Illuminate\Http\Request;
 
 class GameplayController extends Controller
@@ -237,7 +238,20 @@ class GameplayController extends Controller
             }
         }
         // Diffuser l'événement à toute l'équipe
-        EnigmeTexteValide::dispatch($user, $enigme, $session);
+        try {
+            EnigmeTexteValide::dispatch($user, $enigme, $session);
+        } catch (\Exception $e) {
+            \Log::error("Erreur WebSocket (Texte) : " . $e->getMessage());
+        }
+
+        if ($equipe) {
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $msgMembre = "{$user->name} a résolu le mystère textuel de \"{$enigme->titre}\" ! Rendez-vous sur place !";
+                    $membre->notify(new GameNotification($msgMembre, 'success', $enigme->titre));
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -322,7 +336,20 @@ class GameplayController extends Controller
         ]);
 
         // Diffuser l'événement à toute l'équipe
-        EnigmeResolue::dispatch($user, $enigme, $enigme->lieu, $session);
+        try {
+            EnigmeResolue::dispatch($user, $enigme, $enigme->lieu, $session);
+        } catch (\Exception $e) {
+            \Log::error("Erreur WebSocket (GPS) : " . $e->getMessage());
+        }
+
+        if ($equipe) {
+            foreach ($equipe->membres as $membre) {
+                if ($membre->id !== $user->id) {
+                    $msgMembreGps = "{$user->name} a validé la position GPS de \"{$enigme->titre}\" !";
+                    $membre->notify(new GameNotification($msgMembreGps, 'success', $enigme->titre));
+                }
+            }
+        }
 
         $message = 'Félicitations ! Vous avez gagné tous les points de ce lieu.';
         if ($enigme->lieu && $enigme->lieu->contenuCulturel) {

@@ -240,14 +240,14 @@ onMounted(() => {
         onUserJoining: (user) => gameStore.updateJoueurs([...gameStore.joueursConnectes, user]),
         onUserLeaving: (user) => gameStore.updateJoueurs(gameStore.joueursConnectes.filter(u => u.id !== user.id)),
         onEnigmeResolue: (data) => {
-            gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a validé la position GPS de "${data.enigme?.titre || 'l\'énigme'}" !`, 'success');
             if (data.joueur?.id !== currentUserId.value) {
+                gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a validé la position GPS de "${data.enigme?.titre || 'l\'énigme'}" !`, 'success');
                 setTimeout(() => router.reload(), 3000);
             }
         },
         onEnigmeTexteValide: (data) => {
-            gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a résolu le mystère textuel de "${data.enigme?.titre || 'l\'énigme'}" ! Rendez-vous sur place !`, 'success');
             if (data.joueur?.id !== currentUserId.value) {
+                gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a résolu le mystère textuel de "${data.enigme?.titre || 'l\'énigme'}" ! Rendez-vous sur place !`, 'success');
                 setTimeout(() => router.reload(), 3000);
             }
         }
