@@ -8,6 +8,10 @@ export const useGameStore = defineStore('game', () => {
     const tempsSessionRestant = ref(0); // Temps global de la session
     const sessionTimerInterval = ref(null);
 
+    // State - Toast Notifications
+    const toasts = ref([]);
+    let toastIdCounter = 0;
+
     // State - Lieu Actuel
     const enigmeActive = ref(null);
     const lieuActuel = ref(null);
@@ -119,6 +123,24 @@ export const useGameStore = defineStore('game', () => {
         joueursConnectes.value = users;
     }
 
+    // Actions - Toast Notifications
+    function addToast(message, type = 'info') {
+        const id = ++toastIdCounter;
+        toasts.value.push({ id, message, type });
+        
+        // Auto-supprimer le toast après 5 secondes
+        setTimeout(() => {
+            removeToast(id);
+        }, 5000);
+    }
+
+    function removeToast(id) {
+        const index = toasts.value.findIndex(t => t.id === id);
+        if (index !== -1) {
+            toasts.value.splice(index, 1);
+        }
+    }
+
     return {
         // Session
         session,
@@ -131,6 +153,11 @@ export const useGameStore = defineStore('game', () => {
         stopSessionTimer,
         syncTempsForce,
         updateJoueurs,
+
+        // Toast
+        toasts,
+        addToast,
+        removeToast,
         
         // Lieu
         enigmeActive,

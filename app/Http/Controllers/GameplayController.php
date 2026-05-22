@@ -9,6 +9,7 @@ use App\Models\TentativeEnigme;
 use App\Services\GPSService;
 use App\Services\ScoreService;
 use App\Events\EnigmeResolue;
+use App\Events\EnigmeTexteValide;
 use App\Models\Indice;
 use App\Models\IndiceDebloque;
 use App\Models\JoueurSession;
@@ -235,6 +236,8 @@ class GameplayController extends Controller
                 }
             }
         }
+        // Diffuser l'événement à toute l'équipe
+        EnigmeTexteValide::dispatch($user, $enigme, $session);
 
         return response()->json([
             'success' => true,
@@ -317,6 +320,9 @@ class GameplayController extends Controller
             'succes' => true,
             'tente_le' => now(),
         ]);
+
+        // Diffuser l'événement à toute l'équipe
+        EnigmeResolue::dispatch($user, $enigme, $enigme->lieu, $session);
 
         $message = 'Félicitations ! Vous avez gagné tous les points de ce lieu.';
         if ($enigme->lieu && $enigme->lieu->contenuCulturel) {

@@ -236,7 +236,11 @@ onMounted(() => {
         onUserJoining: (user) => gameStore.updateJoueurs([...gameStore.joueursConnectes, user]),
         onUserLeaving: (user) => gameStore.updateJoueurs(gameStore.joueursConnectes.filter(u => u.id !== user.id)),
         onEnigmeResolue: (data) => {
-            showModal('info', 'Progression', 'Un partenaire a résolu l\'énigme !');
+            gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a résolu ${data.enigme?.titre || 'l\'énigme'} !`, 'success');
+            setTimeout(() => router.reload(), 3000);
+        },
+        onEnigmeTexteValide: (data) => {
+            gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a résolu le mystère textuel ! Rendez-vous sur place !`, 'success');
             setTimeout(() => router.reload(), 3000);
         }
     });
@@ -257,7 +261,7 @@ onUnmounted(() => {
         navigator.geolocation.clearWatch(watchId.value);
     }
     webSocketService.leaveSession(props.session.id);
-    gameStore.stopTimer();
+    gameStore.stopLieuTimer();
 });
 
 const validerGPS = () => {

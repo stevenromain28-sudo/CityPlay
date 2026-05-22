@@ -17,9 +17,15 @@ Broadcast::channel('session.{sessionId}', function ($user, $sessionId) {
     // Vérifier si c'est une session individuelle ou d'équipe
     if ($session->equipe_id) {
         // Session d'équipe : vérifier que l'utilisateur est dans l'équipe
-        return $user->equipe_id === $session->equipe_id;
+        if ($user->equipe_id === $session->equipe_id) {
+            return ['id' => $user->id, 'name' => $user->name];
+        }
     } else {
         // Session individuelle : vérifier que l'utilisateur est le propriétaire
-        return $user->id === $session->proprietaire_id;
+        if ($user->id === $session->proprietaire_id) {
+            return ['id' => $user->id, 'name' => $user->name];
+        }
     }
+
+    return false;
 });
