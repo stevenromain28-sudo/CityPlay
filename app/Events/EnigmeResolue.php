@@ -2,53 +2,45 @@
 
 namespace App\Events;
 
-use App\Models\Enigme;
-use App\Models\SessionJeu;
-use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class EnigmeResolue implements ShouldBroadcast
+class EnigmeResolue implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $session;
-    public $enigme;
+    public $joueur;
     public $user;
+    public $enigme;
+    public $lieu;
+    public $session;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(SessionJeu $session, Enigme $enigme, User $user)
+    public function __construct($joueur, $enigme, $lieu, $session)
     {
-        $this->session = $session;
+        $this->joueur = $joueur;
+        $this->user = $joueur;
         $this->enigme = $enigme;
-        $this->user = $user;
+        $this->lieu = $lieu;
+        $this->session = $session;
     }
 
     /**
      * Get the channels the event should broadcast on.
+     *
+     * @return array<int, \Illuminate\Broadcasting\Channel>
      */
     public function broadcastOn(): array
     {
         return [
             new PresenceChannel('session.' . $this->session->id),
-        ];
-    }
-
-    /**
-     * Data to broadcast.
-     */
-    public function broadcastWith(): array
-    {
-        return [
-            'user_name' => $this->user->name,
-            'enigme_titre' => $this->enigme->titre,
-            'nouveau_score' => $this->session->score,
         ];
     }
 }
