@@ -78,5 +78,5 @@ const copyLink = (mode) => {
 </template>
 
 <style scoped>
-h2, h3, button { font-family: 'Bangers', cursive; }
+h2, h3, button { font-family: 'Fredoka', sans-serif; }
 </style>

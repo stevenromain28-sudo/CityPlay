@@ -585,7 +585,7 @@ const isIndiceUnlocked = (indiceId) => {
 @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 
 h2, h3, button, span {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 
 /* Parchment Scroll effect */

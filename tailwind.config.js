@@ -14,6 +14,8 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                gaming: ['Fredoka', 'sans-serif'],
+                bangers: ['Bangers', 'cursive'],
             },
         },
     },

@@ -33,6 +33,6 @@ onMounted(() => {
 
 <style scoped>
 h2, h3 {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 </style>

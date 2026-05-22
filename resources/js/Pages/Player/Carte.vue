@@ -99,6 +99,6 @@ onMounted(() => {
 
 <style scoped>
 h2, h3, button {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 </style>

@@ -117,6 +117,6 @@ const updateProfile = () => {
 
 <style scoped>
 h2, h3, h4, button, span {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 </style>

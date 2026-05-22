@@ -122,6 +122,6 @@ const props = defineProps({
 
 <style scoped>
 h2, h3, h5, span, p {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 </style>
