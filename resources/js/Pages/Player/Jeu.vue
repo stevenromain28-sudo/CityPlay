@@ -1,13 +1,17 @@
 <script setup>
 import PlayerLayout from '@/Layouts/PlayerLayout.vue';
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
+import { router, Link, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import gsap from 'gsap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore } from '@/Stores/game';
 import { webSocketService } from '@/Services/websocket';
+
+const page = usePage();
+const currentUserId = computed(() => page.props.auth?.user?.id);
+
 
 const props = defineProps({
     session: Object,
@@ -237,11 +241,15 @@ onMounted(() => {
         onUserLeaving: (user) => gameStore.updateJoueurs(gameStore.joueursConnectes.filter(u => u.id !== user.id)),
         onEnigmeResolue: (data) => {
             gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a résolu ${data.enigme?.titre || 'l\'énigme'} !`, 'success');
-            setTimeout(() => router.reload(), 3000);
+            if (data.joueur?.id !== currentUserId.value) {
+                setTimeout(() => router.reload(), 3000);
+            }
         },
         onEnigmeTexteValide: (data) => {
             gameStore.addToast(`${data.joueur?.name || 'Un partenaire'} a résolu le mystère textuel ! Rendez-vous sur place !`, 'success');
-            setTimeout(() => router.reload(), 3000);
+            if (data.joueur?.id !== currentUserId.value) {
+                setTimeout(() => router.reload(), 3000);
+            }
         }
     });
 

@@ -8,8 +8,8 @@ export const useGameStore = defineStore('game', () => {
     const tempsSessionRestant = ref(0); // Temps global de la session
     const sessionTimerInterval = ref(null);
 
-    // State - Toast Notifications
     const toasts = ref([]);
+    const toastHistory = ref([]);
     let toastIdCounter = 0;
 
     // State - Lieu Actuel
@@ -124,11 +124,13 @@ export const useGameStore = defineStore('game', () => {
     }
 
     // Actions - Toast Notifications
-    function addToast(message, type = 'info') {
+    function addToast(message, type = 'info', persisted = false) {
         const id = ++toastIdCounter;
-        toasts.value.push({ id, message, type });
-        
-        // Auto-supprimer le toast après 5 secondes
+        const toast = { id, message, type };
+        toasts.value.push(toast);
+        // Save in history (persisted flag for future use)
+        toastHistory.value.unshift({ ...toast, timestamp: new Date().toISOString(), persisted });
+        // Auto‑remove after 5 s from live list only
         setTimeout(() => {
             removeToast(id);
         }, 5000);
@@ -154,8 +156,9 @@ export const useGameStore = defineStore('game', () => {
         syncTempsForce,
         updateJoueurs,
 
-        // Toast
+        // Toasts
         toasts,
+        toastHistory,
         addToast,
         removeToast,
         
