@@ -357,7 +357,7 @@ onMounted(() => {
                 <!-- Header -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-6">
                     <div>
-                        <h1 class="text-3xl md:text-5xl font-black italic uppercase text-white tracking-tighter leading-none mb-2 md:mb-4">
+                        <h1 class="text-2xl md:text-5xl font-black italic uppercase text-white tracking-tighter leading-none mb-2 md:mb-4">
                             Le Grimoire des <span class="text-[#1DA1F2]">Énigmes</span>
                         </h1>
                         <p class="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex items-center">
@@ -366,10 +366,10 @@ onMounted(() => {
                         </p>
                     </div>
 
-                    <Button @click="openNew" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
+                    <Button @click="openNew" class="!px-4 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
                         <template #default>
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-base md:text-lg">Nouvelle Énigme</span>
+                            <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Nouvelle Énigme</span>
                         </template>
                     </Button>
                 </div>
@@ -678,7 +678,7 @@ onMounted(() => {
         </Dialog>
 
         <!-- CONFIRMATION MODAL -->
-        <div v-if="confirmModal.show" class="fixed inset-0 z-[1001] flex items-center justify-center p-4">
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[2001] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
             <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-red-300 bg-gradient-to-br from-red-400 to-red-600 shadow-2xl overflow-hidden">
                 <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
@@ -707,7 +707,7 @@ onMounted(() => {
         </div>
 
         <!-- NOTIFICATION MODAL -->
-        <div v-if="notifyModal.show" class="fixed inset-0 z-[1002] flex items-center justify-center p-4 pointer-events-none">
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4 pointer-events-none">
             <div class="bg-white rounded-2xl px-6 md:px-8 py-3 md:py-4 shadow-2xl border-2 pointer-events-auto flex items-center gap-4 transition-all" :class="notifyModal.type === 'success' ? 'border-green-400 text-green-600' : 'border-red-400 text-red-600'">
                 <span class="font-black uppercase italic tracking-widest text-xs md:text-sm">{{ notifyModal.message }}</span>
                 <button @click="notifyModal.show = false" class="ml-4">

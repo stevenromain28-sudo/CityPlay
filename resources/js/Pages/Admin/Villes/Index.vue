@@ -337,22 +337,22 @@ onMounted(() => {
                 <!-- Header -->
                 <div v-if="!isEditing" class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-6">
                     <div v-if="isSuperAdmin">
-                        <h2 class="text-3xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
+                        <h2 class="text-2xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
                             Toutes les <span class="text-[#1DA1F2]">Cités</span>
                         </h2>
                         <p class="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mt-2">Gestion globale des territoires</p>
                     </div>
                     <div v-else-if="ville">
-                        <h2 class="text-3xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
+                        <h2 class="text-2xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter">
                             Ma <span class="text-[#1DA1F2]">Ville</span>
                         </h2>
                         <p class="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mt-2">Votre domaine d'administration</p>
                     </div>
                     
-                    <Button v-if="isSuperAdmin" @click="createVille" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
+                    <Button v-if="isSuperAdmin" @click="createVille" class="!px-4 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
                         <template #default>
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-base md:text-lg">Nouvelle Ville</span>
+                            <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Nouvelle Ville</span>
                         </template>
                     </Button>
                 </div>
@@ -548,7 +548,7 @@ onMounted(() => {
         </main>
 
         <!-- CUSTOM NOTIFICATION MODAL -->
-        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
             <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
                 <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
@@ -571,7 +571,7 @@ onMounted(() => {
         </div>
 
         <!-- CUSTOM CONFIRMATION MODAL -->
-        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[2001] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
             <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
                 <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">

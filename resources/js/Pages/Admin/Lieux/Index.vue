@@ -337,7 +337,7 @@ watch(() => form.errors, (newErrors) => {
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 p-4 md:p-12 overflow-y-auto max-h-screen">
+    <main class="flex-1 p-4 md:p-12 overflow-y-auto max-h-screen">
             <!-- Mobile Header -->
             <div class="lg:hidden flex items-center justify-between mb-8">
                 <button @click="isMobileMenuOpen = true" class="p-3 bg-white rounded-2xl text-[#1DA1F2] shadow-lg">
@@ -352,7 +352,7 @@ watch(() => form.errors, (newErrors) => {
                 <!-- Header -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-6">
                     <div>
-                        <h1 class="text-3xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter leading-none mb-2 md:mb-4">
+                        <h1 class="text-2xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter leading-none mb-2 md:mb-4">
                             Les <span class="text-[#1DA1F2]">Lieux</span>
                         </h1>
                         <p class="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex items-center">
@@ -362,20 +362,21 @@ watch(() => form.errors, (newErrors) => {
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <Link :href="route('admin.enigmes.index')" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-purple-600 !border-none !rounded-2xl !shadow-2xl !shadow-purple-400/20 hover:!scale-105 transition-transform !flex !items-center justify-center">
+                        <Link :href="route('admin.enigmes.index')" class="!px-4 md:!px-8 !py-3 md:!py-4 !bg-purple-600 !border-none !rounded-2xl !shadow-2xl !shadow-purple-400/20 hover:!scale-105 transition-transform !flex !items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-base md:text-lg">Énigmes</span>
+                            <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Énigmes</span>
                         </Link>
-                        <Button @click="openNew" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center justify-center group">
+                        <Button @click="openNew" class="!px-4 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center justify-center group">
                             <template #default>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                                <span class="text-white font-black italic uppercase tracking-widest text-base md:text-lg">Nouveau Lieu</span>
+                                <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Nouveau Lieu</span>
                             </template>
                         </Button>
                     </div>
                 </div>
-
+            </div>
         <!-- Main Split Panel (Map + Form) -->
+
         <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-[500px] items-stretch relative">
             
             <!-- Map Container Column -->
@@ -497,9 +498,10 @@ watch(() => form.errors, (newErrors) => {
                 </form>
             </div>
         </div>
+    </main>
 
         <!-- CUSTOM NOTIFICATION MODAL -->
-        <div v-if="notifyModal.show" class="fixed inset-0 z-[1002] flex items-center justify-center p-4">
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
             <div 
                 class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
@@ -551,7 +553,7 @@ watch(() => form.errors, (newErrors) => {
         </div>
 
         <!-- CUSTOM CONFIRMATION MODAL -->
-        <div v-if="confirmModal.show" class="fixed inset-0 z-[1001] flex items-center justify-center p-4">
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[2001] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
             <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-red-300 bg-gradient-to-br from-red-400 to-red-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
                 <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">

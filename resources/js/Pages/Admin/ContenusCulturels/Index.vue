@@ -231,7 +231,7 @@ onMounted(() => {
                 <!-- Header -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-6">
                     <div>
-                        <h1 class="text-3xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter leading-none mb-2 md:mb-4">
+                        <h1 class="text-2xl md:text-5xl font-black italic uppercase text-slate-800 tracking-tighter leading-none mb-2 md:mb-4">
                             Archives <span class="text-[#1DA1F2]">Culturelles</span>
                         </h1>
                         <p class="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex items-center">
@@ -243,7 +243,7 @@ onMounted(() => {
                     <Button @click="openNew" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
                         <template #default>
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-base md:text-lg">Nouveau Contenu</span>
+                            <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Nouveau Contenu</span>
                         </template>
                     </Button>
                 </div>
@@ -317,6 +317,7 @@ onMounted(() => {
                 </div>
             </div>
         </div>
+    </main>
 
         <!-- Form Dialog -->
         <Dialog v-model:visible="visible" modal :style="{ width: '92vw', maxWidth: '50rem' }" class="prime-light-dialog">
