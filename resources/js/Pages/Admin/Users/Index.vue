@@ -153,19 +153,21 @@ onMounted(() => {
 <template>
     <Head title="Gestion des Utilisateurs - CityPlay" />
 
-    <div class="min-h-screen bg-[#F0F7FF] text-slate-800 flex overflow-hidden font-sans relative">
+    <div class="min-h-screen bg-[#F0F7FF] text-slate-800 flex relative overflow-x-hidden font-sans">
         
         <!-- Mobile Menu Overlay -->
-        <div v-if="isMobileMenuOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] md:hidden transition-opacity" @click="isMobileMenuOpen = false"></div>
+        <div v-if="isMobileMenuOpen" 
+             @click="isMobileMenuOpen = false"
+             class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"></div>
 
         <!-- Sidebar -->
-        <aside :class="{'translate-x-0': isMobileMenuOpen, '-translate-x-full': !isMobileMenuOpen}"
-               class="fixed md:relative inset-y-0 left-0 flex w-24 lg:w-32 bg-[#1DA1F2] flex-col items-center pt-10 pb-6 md:py-10 shadow-[5px_0_30px_rgba(29,161,242,0.1)] z-[100] transition-transform duration-300 ease-in-out md:translate-x-0 overflow-x-hidden md:overflow-x-visible overflow-y-auto md:overflow-y-visible no-scrollbar">
-            <div class="mb-10 md:mb-16 shrink-0">
-                <div class="w-16 h-16 bg-yellow-400 rounded-3xl flex items-center justify-center shadow-xl rotate-3 hover:rotate-0 transition-transform duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.5,2H11.5L11,5H13L12.5,2M13.5,6H10.5L10,12H14L13.5,6M15,13H9L8,22H10L10.5,18H13.5L14,22H16L15,13Z" />
-                    </svg>
+        <aside :class="[
+            'bg-[#1DA1F2] flex flex-col items-center py-8 md:py-12 px-2 md:px-4 shrink-0 sticky top-0 h-screen transition-all duration-300 z-50',
+            isMobileMenuOpen ? 'fixed left-0 w-24 md:w-32 translate-x-0' : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-24 md:w-32'
+        ]">
+            <div class="mb-12 md:mb-20">
+                <div class="w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl md:rounded-[2rem] shadow-2xl flex items-center justify-center transform -rotate-12">
+                    <span class="text-[#1DA1F2] text-2xl md:text-4xl font-black italic">C</span>
                 </div>
             </div>
 
@@ -186,77 +188,57 @@ onMounted(() => {
                         <svg v-if="item.icon==='culture'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                         <svg v-if="item.icon==='users'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     </div>
-                    <span class="absolute left-full ml-6 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
-                        {{ item.label }}
-                    </span>
                 </Link>
             </nav>
 
             <div class="mt-auto">
-                <Link :href="route('logout')" method="post" as="button" class="p-4 text-white/60 hover:text-white hover:scale-110 transition-all">
+                <button @click="triggerLogout" class="p-4 text-white/60 hover:text-white hover:scale-110 transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                </Link>
+                </button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col h-screen overflow-hidden z-10">
-            <!-- Header -->
-            <header class="h-20 md:h-28 flex items-center justify-between px-6 md:px-12 shrink-0 bg-white/80 backdrop-blur-md border-b border-blue-100 relative z-[40]">
-                <div class="flex items-center">
-                    <button @click="isMobileMenuOpen = true" class="md:hidden mr-4 p-2 text-[#1DA1F2] hover:bg-blue-50 rounded-lg transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    </button>
-                    <div>
-                        <h1 class="text-2xl md:text-4xl font-black italic tracking-tighter text-[#1DA1F2] uppercase">
-                            City<span class="text-yellow-400">Play</span> <span class="text-slate-800 hidden sm:inline">Admin</span>
-                        </h1>
-                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1 hidden sm:block">Exploration Management Console</p>
-                    </div>
+        <main class="flex-1 p-4 md:p-12 overflow-y-auto max-h-screen">
+            <!-- Mobile Header -->
+            <div class="lg:hidden flex items-center justify-between mb-8">
+                <button @click="isMobileMenuOpen = true" class="p-3 bg-white rounded-2xl text-[#1DA1F2] shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                </button>
+                <div class="w-12 h-12 bg-[#1DA1F2] rounded-xl flex items-center justify-center shadow-lg transform rotate-6">
+                    <span class="text-white text-xl font-black italic">C</span>
                 </div>
+            </div>
 
-                <div class="flex items-center space-x-4 md:space-x-10">
-                    <!-- Bouton Notification Demandes -->
-                    <button @click="isRequestsModalVisible = true" class="relative p-3 bg-blue-50 hover:bg-blue-100 text-[#1DA1F2] rounded-2xl transition-all hover:scale-105 shrink-0 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span v-if="pendingRequests && pendingRequests.length > 0" class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white animate-bounce leading-none">
-                            {{ pendingRequests.length }}
-                        </span>
-                    </button>
-
-                    <div class="flex items-center space-x-3 md:space-x-5 md:pl-10 md:border-l-2 md:border-blue-50">
-                        <div class="text-right hidden sm:block">
-                            <p class="text-slate-800 font-black text-sm md:text-lg uppercase italic leading-tight">{{ $page.props.auth.user.name }}</p>
-                            <p class="text-[#1DA1F2] text-[10px] font-black uppercase tracking-widest">Super Admin</p>
-                        </div>
-                        <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[2rem] bg-yellow-400 p-0.5 md:p-1 shadow-lg shadow-yellow-200 rotate-3">
-                            <img src="https://ui-avatars.com/api/?name=Admin&background=1DA1F2&color=fff" class="w-full h-full rounded-xl md:rounded-[1.8rem] object-cover" alt="Avatar">
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Scrollable Body -->
-            <div class="flex-1 overflow-y-auto px-4 md:px-12 py-6 md:py-12 space-y-8 md:space-y-12 custom-scrollbar">
-                
+            <div class="max-w-7xl mx-auto">
                 <!-- Page Title -->
-                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-6">
                     <div>
-                        <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-800">
+                        <h2 class="text-2xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-800">
                             Gestion des <span class="text-[#1DA1F2]">Comptes</span>
                         </h2>
-                        <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest mt-2">
-                            Administrer les privilèges et utilisateurs de la plateforme
+                        <p class="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mt-2 flex items-center">
+                            <span class="w-6 md:w-8 h-1 bg-[#1DA1F2] mr-3 md:mr-4"></span>
+                            Administrer les privilèges de CityPlay
                         </p>
                     </div>
-                    <Button @click="openNew" class="!px-6 !py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl hover:scale-105 transition-transform flex items-center justify-center">
-                        <template #default>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-xs md:text-sm">Créer un Admin</span>
-                        </template>
-                    </Button>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <button @click="isRequestsModalVisible = true" class="relative !px-4 !py-3 !bg-blue-50 hover:!bg-blue-100 !text-[#1DA1F2] !rounded-2xl transition-all hover:scale-105 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span class="font-black uppercase tracking-widest text-xs">Demandes</span>
+                            <span v-if="pendingRequests && pendingRequests.length > 0" class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white animate-bounce">
+                                {{ pendingRequests.length }}
+                            </span>
+                        </button>
+                        <Button @click="openNew" class="!px-6 !py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl hover:scale-105 transition-transform flex items-center justify-center">
+                            <template #default>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
+                                <span class="text-white font-black italic uppercase tracking-widest text-xs md:text-sm">Créer un Admin</span>
+                            </template>
+                        </Button>
+                    </div>
                 </div>
 
                 <!-- Global stats -->
@@ -442,22 +424,51 @@ onMounted(() => {
         </Dialog>
 
         <!-- CUSTOM NOTIFICATION MODAL -->
-        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+            <div 
+                class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
+                :class="[
+                    notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : '',
+                    notifyModal.type === 'error' ? 'border-red-300 bg-gradient-to-br from-red-400 to-red-600' : ''
+                ]"
+            >
                 <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    <div 
+                        class="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
+                        :class="[
+                            notifyModal.type === 'success' ? 'bg-green-50 text-green-500' : '',
+                            notifyModal.type === 'error' ? 'bg-red-50 text-red-500' : ''
+                        ]"
+                    >
+                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-8 md:h-10 w-8 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <svg v-if="notifyModal.type === 'error'" xmlns="http://www.w3.org/2000/svg" class="h-8 md:h-10 w-8 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                    <h3 
+                        class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
+                        :class="[
+                            notifyModal.type === 'success' ? 'text-green-600' : '',
+                            notifyModal.type === 'error' ? 'text-red-600' : ''
+                        ]"
+                    >
                         {{ notifyModal.title }}
                     </h3>
                     
-                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+                    <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
 
-                    <button @click="notifyModal.show = false" 
-                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                    <button 
+                        @click="notifyModal.show = false" 
+                        class="w-full py-3 md:py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 text-xs md:text-sm"
+                        :class="[
+                            notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : '',
+                            notifyModal.type === 'error' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : ''
+                        ]"
+                    >
                         D'accord
                     </button>
                 </div>
@@ -465,27 +476,27 @@ onMounted(() => {
         </div>
 
         <!-- CUSTOM CONFIRMATION MODAL -->
-        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[2001] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
-                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-red-300 bg-gradient-to-br from-red-400 to-red-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
+                    <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 md:h-10 w-8 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-600 mb-3 relative z-10">
+                    <h3 class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-red-600 mb-3 relative z-10">
                         {{ confirmModal.title }}
                     </h3>
                     
-                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+                    <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
 
                     <div class="flex space-x-3 relative z-10">
                         <button @click="confirmModal.show = false" 
-                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                                class="flex-1 py-3 md:py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all text-xs md:text-sm">
                             Annuler
                         </button>
                         <button @click="confirmModal.onConfirm" 
-                                class="flex-1 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 hover:scale-105 active:scale-95 transition-all">
+                                class="flex-1 py-3 md:py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all text-xs md:text-sm">
                             Confirmer
                         </button>
                     </div>
@@ -497,7 +508,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-h1, h2, h3, h4, span, button { font-family: 'Bangers', cursive; }
+h1, h2, h3, h4, span, button { font-family: 'Fredoka', sans-serif; }
 .font-sans { font-family: 'Outfit', sans-serif !important; }
 
 .prime-custom-dialog :deep(.p-dialog-header) {

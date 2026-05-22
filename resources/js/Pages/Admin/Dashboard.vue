@@ -81,6 +81,26 @@ const triggerNotify = (type, title, message) => {
     notifyModal.value = { show: true, type, title, message };
 };
 
+const confirmModal = ref({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+});
+
+const triggerLogout = () => {
+    confirmModal.value = {
+        show: true,
+        title: 'Déconnexion',
+        message: 'Êtes-vous sûr de vouloir quitter la console d\'administration ?',
+        onConfirm: () => {
+            import('@inertiajs/vue3').then(m => {
+                m.router.post(route('logout'));
+            });
+        }
+    };
+};
+
 const invitationLink = ref('');
 
 const generateLink = () => {
@@ -152,9 +172,9 @@ const generateLink = () => {
             </nav>
 
             <div class="mt-auto">
-                <Link :href="route('logout')" method="post" as="button" class="p-4 text-white/60 hover:text-white hover:scale-110 transition-all">
+                <button @click="triggerLogout" class="p-4 text-white/60 hover:text-white hover:scale-110 transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                </Link>
+                </button>
             </div>
         </aside>
 
@@ -199,19 +219,51 @@ const generateLink = () => {
             <div class="flex-1 overflow-y-auto px-4 md:px-12 py-6 md:py-12 space-y-8 md:space-y-16 custom-scrollbar">
                 <section class="content-section">
                     <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 md:mb-10 gap-4 md:gap-6">
-                        <div>
+                        <div v-if="$page.props.auth.user.roles.includes('super_admin')">
+                            <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-800">Toutes les <span class="text-[#1DA1F2]">Villes</span></h2>
+                            <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest mt-2">Gestion globale de l'empire CityPlay</p>
+                        </div>
+                        <div v-else>
                             <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-slate-800">Ma <span class="text-[#1DA1F2]">Ville</span></h2>
                             <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest mt-2">Votre terrain d'exploration</p>
                         </div>
                         <Link :href="route('admin.villes.index')" class="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 bg-yellow-400 text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-xl shadow-yellow-100 hover:scale-105 transition-transform active:scale-95 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                            {{ ma_ville ? 'Gérer ma ville' : 'Créer ma ville' }}
+                            {{ $page.props.auth.user.roles.includes('super_admin') ? 'Gérer les villes' : (ma_ville ? 'Gérer ma ville' : 'Créer ma ville') }}
                         </Link>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
-                        <!-- Ma Ville Section -->
-                        <div class="lg:col-span-2">
+                        <!-- Super Admin View: List of cities -->
+                        <template v-if="$page.props.auth.user.roles.includes('super_admin')">
+                            <div v-for="ville in villes" :key="ville.id" class="relative group overflow-hidden rounded-3xl md:rounded-[2.5rem] h-64 shadow-xl transition-all duration-500 bg-white border-2 border-white hover:scale-[1.02]">
+                                <Link :href="route('admin.villes.index')" class="absolute inset-0">
+                                    <img v-if="ville.banniere" :src="ville.banniere" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                                    <div v-else class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+                                    
+                                    <div class="absolute inset-0 p-6 flex flex-col justify-end">
+                                        <h3 class="text-2xl font-black italic uppercase text-white tracking-tighter mb-1 group-hover:text-yellow-400 transition-colors">{{ ville.nom }}</h3>
+                                        <div class="flex items-center text-white/80 space-x-3">
+                                            <span class="text-[10px] font-black uppercase tracking-widest">{{ ville.lieux_count || 0 }} Lieux</span>
+                                            <span class="w-1 h-1 bg-white/40 rounded-full"></span>
+                                            <span class="text-[10px] font-black uppercase tracking-widest">{{ ville.pays || 'France' }}</span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
+                            
+                            <!-- Add City Card for SuperAdmin -->
+                            <Link :href="route('admin.villes.index')" class="h-64 rounded-3xl md:rounded-[2.5rem] bg-white border-4 border-dashed border-blue-100 flex flex-col items-center justify-center p-6 text-center group hover:border-[#1DA1F2] transition-colors">
+                                <div class="w-12 h-12 bg-blue-50 text-[#1DA1F2] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
+                                </div>
+                                <h3 class="text-xl font-black italic uppercase text-slate-800 tracking-tighter">Ajouter une ville</h3>
+                            </Link>
+                        </template>
+
+                        <!-- Standard Admin View -->
+                        <div v-else class="lg:col-span-2">
                             <Link v-if="ma_ville" :href="route('admin.villes.index')" 
                                  class="stat-card relative group overflow-hidden rounded-3xl md:rounded-[3rem] h-full min-h-[300px] md:min-h-[400px] cursor-pointer shadow-2xl transition-all duration-500 bg-white border-2 border-white"
                                  @mouseenter="hoverCard" @mouseleave="leaveCard">
@@ -336,6 +388,35 @@ const generateLink = () => {
                 </div>
             </div>
         </div>
+
+        <!-- CUSTOM CONFIRMATION MODAL -->
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-red-300 bg-gradient-to-br from-red-400 to-red-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
+                    <div class="w-20 h-20 mx-auto bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    </div>
+
+                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-red-600 mb-3 relative z-10">
+                        {{ confirmModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+
+                    <div class="flex space-x-3 relative z-10">
+                        <button @click="confirmModal.show = false" 
+                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                            Annuler
+                        </button>
+                        <button @click="confirmModal.onConfirm" 
+                                class="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all">
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -345,7 +426,7 @@ const generateLink = () => {
 }
 
 h1, h2, h3, h4, button, span {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

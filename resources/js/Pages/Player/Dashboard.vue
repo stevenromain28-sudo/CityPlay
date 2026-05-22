@@ -405,7 +405,7 @@ const creerInvitation = () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 .font-sans { font-family: 'Outfit', sans-serif; }
-h1, h2, h3, button, span { font-family: 'Bangers', cursive; }
+h1, h2, h3, button, span { font-family: 'Fredoka', sans-serif; }
 
 /* Elegant Hand-drawn Medieval Parchment Scroll (Sans clip-path) */
 .parchment-scroll-violet {

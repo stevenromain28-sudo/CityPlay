@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Mail\TwoFactorCodeMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,8 +57,21 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        Auth::login($user);
+        // Generate a 6-digit random code for 2FA
+        $code = sprintf("%06d", mt_rand(100000, 999999));
 
-        return redirect()->intended(route('player.dashboard', absolute: false));
+        $user->forceFill([
+            'two_factor_code' => $code,
+            'two_factor_expires_at' => now()->addMinutes(15),
+        ])->save();
+
+        // Send Email
+        Mail::to($user->email)->send(new TwoFactorCodeMail($code));
+
+        // Store user identifier temporarily in session
+        $request->session()->put('login.two_factor_id', $user->id);
+        $request->session()->put('login.remember', false); // No remember for new registration
+
+        return redirect()->route('login.two-factor');
     }
 }

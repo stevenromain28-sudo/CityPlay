@@ -356,7 +356,7 @@ onUnmounted(() => {
 @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;700;900&display=swap');
 
 h1, h2, h3, button, span {
-    font-family: 'Bangers', cursive;
+    font-family: 'Fredoka', sans-serif;
 }
 
 /* Elegant RPG scroll design for history card list */

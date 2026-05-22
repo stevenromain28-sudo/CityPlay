@@ -52,6 +52,21 @@ class EnigmeController extends Controller
         ]);
     }
 
+    public function byLieu(Lieu $lieu)
+    {
+        $lieu->load('ville');
+        $enigmes = Enigme::where('lieu_id', $lieu->id)
+            ->with('indices')
+            ->orderBy('is_bonus')
+            ->orderBy('ordre')
+            ->get();
+
+        return Inertia::render('Admin/Enigmes/ByLieu', [
+            'lieu' => $lieu,
+            'enigmes' => $enigmes,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([

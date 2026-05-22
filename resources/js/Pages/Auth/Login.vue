@@ -60,7 +60,6 @@ onMounted(() => {
     <Head title="CityPlay - Connexion" />
 
     <component :is="'style'">
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap');
         .font-gaming {
             font-family: 'Fredoka', sans-serif;
         }

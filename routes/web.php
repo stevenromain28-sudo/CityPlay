@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->prefix('admin')->name('ad
 
     // CRUD Énigmes
     Route::get('/enigmes', [EnigmeController::class, 'index'])->name('enigmes.index');
+    Route::get('/lieux/{lieu}/enigmes', [EnigmeController::class, 'byLieu'])->name('lieux.enigmes');
     Route::post('/enigmes', [EnigmeController::class, 'store'])->name('enigmes.store');
     Route::post('/enigmes/{enigme}', [EnigmeController::class, 'update'])->name('enigmes.update');
     Route::delete('/enigmes/{enigme}', [EnigmeController::class, 'destroy'])->name('enigmes.destroy');
