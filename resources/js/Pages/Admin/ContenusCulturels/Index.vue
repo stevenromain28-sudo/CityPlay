@@ -247,7 +247,7 @@ onMounted(() => {
                         </template>
                     </Button>
                 </div>
-
+            </div>
             <!-- SuperAdmin Global City Filter Bar -->
             <div v-if="isSuperAdmin" class="mb-12 bg-white rounded-[2.5rem] p-8 shadow-xl shadow-blue-100/50 border-2 border-white flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div class="flex items-center space-x-4">
@@ -316,7 +316,7 @@ onMounted(() => {
                     <p class="text-slate-400 font-bold uppercase tracking-widest max-w-md">Ajoutez des anecdotes culturelles pour rendre vos lieux inoubliables.</p>
                 </div>
             </div>
-        </div>
+        </main>
 
         <!-- Form Dialog -->
         <Dialog v-model:visible="visible" modal :style="{ width: '92vw', maxWidth: '50rem' }" class="prime-light-dialog">
