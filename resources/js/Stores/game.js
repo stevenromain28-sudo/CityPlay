@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import axios from 'axios';
 
 export const useGameStore = defineStore('game', () => {
     // State - Session Global (Frontend est le seul maître !)
@@ -7,6 +8,10 @@ export const useGameStore = defineStore('game', () => {
     const joueursConnectes = ref([]);
     const tempsSessionRestant = ref(0); // Temps global de la session
     const sessionTimerInterval = ref(null);
+
+    const toasts = ref([]);
+    const toastHistory = ref([]);
+    let toastIdCounter = 0;
 
     // State - Lieu Actuel
     const enigmeActive = ref(null);
@@ -119,6 +124,61 @@ export const useGameStore = defineStore('game', () => {
         joueursConnectes.value = users;
     }
 
+    // Actions - Toast Notifications
+    function addToast(message, type = 'info', persisted = false) {
+        const id = ++toastIdCounter;
+        const toast = { id, message, type };
+        toasts.value.push(toast);
+        // We no longer automatically push to history here because the backend handles DB storage.
+        // But for immediate visual feedback before the next fetch, we can optionally add it.
+        // We will just rely on fetchNotifications for the persistent history.
+        
+        setTimeout(() => {
+            removeToast(id);
+        }, 5000);
+    }
+
+    function removeToast(id) {
+        const index = toasts.value.findIndex(t => t.id === id);
+        if (index !== -1) {
+            toasts.value.splice(index, 1);
+        }
+    }
+
+    async function fetchNotifications() {
+        try {
+            const response = await axios.get('/play/notifications');
+            if (response.data.success) {
+                toastHistory.value = response.data.notifications.map(n => ({
+                    id: n.id,
+                    message: n.data.message,
+                    type: n.data.type,
+                    timestamp: n.created_at
+                }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch notifications', error);
+        }
+    }
+
+    async function deleteNotification(id) {
+        try {
+            await axios.delete(`/play/notifications/${id}`);
+            toastHistory.value = toastHistory.value.filter(n => n.id !== id);
+        } catch (error) {
+            console.error('Failed to delete notification', error);
+        }
+    }
+
+    async function clearAllNotifications() {
+        try {
+            await axios.delete('/play/notifications/clear');
+            toastHistory.value = [];
+        } catch (error) {
+            console.error('Failed to clear notifications', error);
+        }
+    }
+
     return {
         // Session
         session,
@@ -131,6 +191,15 @@ export const useGameStore = defineStore('game', () => {
         stopSessionTimer,
         syncTempsForce,
         updateJoueurs,
+
+        // Toasts
+        toasts,
+        toastHistory,
+        addToast,
+        removeToast,
+        fetchNotifications,
+        deleteNotification,
+        clearAllNotifications,
         
         // Lieu
         enigmeActive,

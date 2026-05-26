@@ -26,10 +26,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        Event::listen(
-            EnigmeResolue::class,
-            [CalculScore::class, 'handle']
-        );
+        // Event::listen(
+        //     EnigmeResolue::class,
+        //     [CalculScore::class, 'handle']
+        // );
 
         Event::listen(
             EnigmeResolue::class,

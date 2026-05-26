@@ -1,9 +1,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
+
+
 import { useGameStore } from '@/Stores/game.js';
 import gsap from 'gsap';
 import axios from 'axios';
+import NotificationCenter from '@/Components/NotificationCenter.vue';
 
 const props = defineProps({
     title: String,
@@ -21,6 +24,8 @@ const isDashboard = computed(() => {
 });
 
 const dashboardContainer = ref(null);
+const showNotificationCenter = ref(false);
+
 const showLogoutModal = ref(false);
 const showPauseModal = ref(false);
 const showTimeUpSessionModal = ref(false);
@@ -190,6 +195,11 @@ onUnmounted(() => {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 group-hover:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden group-hover:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     </Link>
+<button @click="showNotificationCenter = true" class="pointer-events-auto ml-3 text-white hover:text-yellow-300 transition" title="Notifications">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1" />
+  </svg>
+</button>
                 </div>
 
                 <div class="flex items-center pointer-events-none">
@@ -328,7 +338,7 @@ onUnmounted(() => {
                 </svg>
             </button>
 
-            <button @click="confirmLogout" class="w-12 h-12 md:w-16 md:h-16 bg-red-500/80 backdrop-blur-md border-2 border-red-400/50 rounded-2xl flex items-center justify-center text-white hover:bg-red-600 hover:scale-110 transition-all shadow-[0_5px_15px_rgba(239,68,68,0.5)]">
+            <button type="button" @click="confirmLogout()" class="w-12 h-12 md:w-16 md:h-16 bg-red-500/80 backdrop-blur-md border-2 border-red-400/50 rounded-2xl flex items-center justify-center text-white hover:bg-red-600 hover:scale-110 transition-all shadow-[0_5px_15px_rgba(239,68,68,0.5)]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
@@ -369,7 +379,36 @@ onUnmounted(() => {
                 </button>
             </div>
         </div>
+
+        <!-- Toast Notifications -->
+        <div class="fixed top-24 right-4 z-[210] flex flex-col gap-3 pointer-events-auto">
+            <div v-for="toast in gameStore.toasts" :key="toast.id" 
+                 :class="[
+                    'px-6 py-4 rounded-2xl shadow-2xl border-2 flex items-center gap-3 transform transition-all duration-300',
+                    toast.type === 'success' ? 'bg-green-50 border-green-200' : 
+                    toast.type === 'error' ? 'bg-red-50 border-red-200' : 
+                    'bg-blue-50 border-blue-200'
+                 ]"
+                 @click="gameStore.removeToast(toast.id)">
+                <svg v-if="toast.type === 'success'" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg v-else-if="toast.type === 'error'" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <svg v-else class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p :class="[
+                    'font-bold text-sm uppercase tracking-widest',
+                    toast.type === 'success' ? 'text-green-800' : 
+                    toast.type === 'error' ? 'text-red-800' : 
+                    'text-blue-800'
+                ]">{{ toast.message }}</p>
+            </div>
+        </div>
     </div>
+<NotificationCenter :show="showNotificationCenter" @update:show="showNotificationCenter = $event" />
 </template>
 
 <style scoped>

@@ -25,6 +25,7 @@ class WebSocketService {
             .joining(callbacks.onUserJoining || (() => {}))
             .leaving(callbacks.onUserLeaving || (() => {}))
             .listen('EnigmeResolue', callbacks.onEnigmeResolue || (() => {}))
+            .listen('EnigmeTexteValide', callbacks.onEnigmeTexteValide || (() => {}))
             .listen('SessionCommencee', callbacks.onSessionCommencee || (() => {}))
             .error((error) => {
                 console.error('Erreur WebSocket:', error);
