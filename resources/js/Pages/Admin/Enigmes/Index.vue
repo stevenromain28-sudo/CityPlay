@@ -308,7 +308,9 @@ watch(() => form.lieu_id, (newVal) => {
 
 
 const onFileSelect = (event) => {
-    form.image = event.files[0];
+    if (event.files && event.files.length > 0) {
+        form.image = event.files[0];
+    }
 };
 
 const onAudioSelect = (event) => {
@@ -361,10 +363,10 @@ onMounted(() => {
                         </p>
                     </div>
 
-                    <Button @click="openNew" class="!px-4 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
+                    <Button @click="openNew" class="!px-4 md:!px-8 !py-2.5 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
                         <template #default>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Nouvelle Énigme</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-2 md:mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
+                            <span class="text-white font-black italic uppercase tracking-widest text-xs md:text-lg">Nouvelle Énigme</span>
                         </template>
                     </Button>
                 </div>
@@ -568,13 +570,13 @@ onMounted(() => {
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Niveau (1-3)</label>
                         <select v-model="form.niveau" 
-                                class="w-full rounded-xl bg-blue-50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all appearance-none !block"
-                                :class="{'opacity-50 cursor-not-allowed': form.is_bonus}">
+                                class="w-full rounded-xl bg-blue-50 border border-blue-100 p-3 md:p-4 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] focus:bg-white outline-none transition-all appearance-none !block">
                             <option v-for="lvl in 3" :key="lvl" :value="lvl" :disabled="!form.is_bonus && usedLevels.includes(lvl)">
                                 Niveau {{ lvl }} {{ !form.is_bonus && usedLevels.includes(lvl) ? '(Déjà utilisé)' : '' }}
                             </option>
                         </select>
                         <p v-if="!form.is_bonus && usedLevels.length >= 3" class="text-[8px] md:text-[10px] text-red-500 font-bold uppercase">Tous les niveaux principaux sont occupés</p>
+                        <p v-if="form.is_bonus" class="text-[8px] md:text-[10px] text-purple-500 font-bold uppercase">Énigme Bonus : Le niveau définit le type de jeu</p>
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-2">Ordre</label>
@@ -612,25 +614,17 @@ onMounted(() => {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
                     <div class="space-y-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Image de l'Énigme</label>
-                        <div v-if="!form.is_bonus" class="bg-white/5 p-4 rounded-xl border border-white/10 flex items-center gap-4">
-                            <img v-if="props.lieux.find(l => l.id === form.lieu_id)?.image_principale" :src="props.lieux.find(l => l.id === form.lieu_id)?.image_principale" class="w-12 h-12 rounded-lg object-cover border border-white/10">
-                            <span class="text-xs font-bold text-white/40 uppercase tracking-wide">Image du lieu associée automatiquement</span>
-                        </div>
-                        <FileUpload v-else mode="basic" name="image" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir une image" />
-                    </div>
-                    <div class="space-y-2">
                         <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Audio de l'Énigme (Ambiance/Indice vocal)</label>
                         <FileUpload mode="basic" name="audio" accept="audio/*" @select="onAudioSelect" class="w-full" chooseLabel="Choisir un audio" />
                     </div>
                 </div>
 
                 <div class="pt-4 flex flex-col sm:flex-row gap-3">
-                    <Button type="submit" class="flex-1 !py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform justify-center">
-                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Configurer le Mécanisme</span>
+                    <Button type="submit" class="flex-1 !py-3 md:!py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform justify-center">
+                         <span class="text-sm md:text-lg font-black italic uppercase text-white tracking-widest">Configurer le Mécanisme</span>
                     </Button>
-                    <Button v-if="form.id" @click.prevent="deleteEnigme" class="sm:w-auto !px-6 !py-4 !bg-red-500 hover:!bg-red-600 !border-none !rounded-xl !shadow-xl transition-colors justify-center">
-                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Détruire</span>
+                    <Button v-if="form.id" @click.prevent="deleteEnigme" class="sm:w-auto !px-6 !py-3 md:!py-4 !bg-red-500 hover:!bg-red-600 !border-none !rounded-xl !shadow-xl transition-colors justify-center">
+                         <span class="text-sm md:text-lg font-black italic uppercase text-white tracking-widest">Détruire</span>
                     </Button>
                 </div>
             </form>
@@ -647,22 +641,25 @@ onMounted(() => {
             <form @submit.prevent="submit" class="space-y-8 py-8 px-4 font-sans">
                 <!-- Contenu de l'énigme partagé pour tous les niveaux -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-2 bg-white/5 p-6 rounded-[2rem] border border-white/10">
+                    <div class="space-y-2 bg-blue-50 p-6 rounded-[2rem] border border-blue-100 shadow-inner">
                         <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Le Mystère (Contenu de l'énigme)</label>
-                        <textarea v-model="form.contenu" rows="4" class="w-full rounded-2xl bg-white/5 border border-white/10 p-4 md:p-6 text-sm md:text-base font-bold text-white focus:ring-2 focus:ring-[#1DA1F2] outline-none transition-all placeholder:text-white/20" placeholder="Décrivez l'énigme de manière mystérieuse..."></textarea>
+                        <textarea v-model="form.contenu" rows="4" class="w-full rounded-2xl bg-white border border-blue-100 p-4 md:p-6 text-sm md:text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#1DA1F2] outline-none transition-all placeholder:text-slate-400" placeholder="Décrivez l'énigme de manière mystérieuse..."></textarea>
                     </div>
 
-                    <div class="space-y-4 bg-white/5 p-6 rounded-[2rem] border border-white/10 flex flex-col justify-center">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-white/30 ml-2">Image de l'Énigme</label>
+                    <div class="space-y-4 bg-blue-50 p-6 rounded-[2rem] border border-blue-100 shadow-inner flex flex-col justify-center">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-[#1DA1F2] ml-2">Image de l'Énigme</label>
                         <div class="flex flex-col gap-4">
-                            <div v-if="enigme?.image || form.image" class="relative w-full h-32 rounded-xl overflow-hidden border border-white/10">
-                                <img :src="form.image ? (typeof form.image === 'string' ? form.image : URL.createObjectURL(form.image)) : enigme?.image" class="w-full h-full object-cover">
+                            <div v-if="form.image" class="relative w-full h-32 rounded-xl overflow-hidden border border-blue-100 bg-white">
+                                <img :src="typeof form.image === 'string' ? form.image : URL.createObjectURL(form.image)" class="w-full h-full object-cover">
                                 <button type="button" @click="form.image = null" class="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>
                             </div>
+                            <div v-else-if="form.id && props.enigmes.find(e => e.id === form.id)?.image" class="relative w-full h-32 rounded-xl overflow-hidden border border-blue-100 bg-white">
+                                <img :src="props.enigmes.find(e => e.id === form.id).image" class="w-full h-full object-cover">
+                            </div>
                             <FileUpload mode="basic" name="image" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir une image" />
-                            <p class="text-[8px] text-white/40 italic uppercase tracking-wider text-center">Cette image sera révélée une fois l'énigme résolue</p>
+                            <p class="text-[8px] text-[#1DA1F2]/60 italic uppercase tracking-wider text-center font-bold">Cette image sera révélée une fois l'énigme résolue</p>
                         </div>
                     </div>
                 </div>
@@ -703,6 +700,32 @@ onMounted(() => {
                             </p>
                         </div>
                     </div>
+
+                    <!-- Indice unique pour Niveau 2 -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-lg md:text-2xl font-black italic uppercase text-yellow-400 tracking-tighter">L'Indice du Parchemin ({{ form.indices.length }}/1)</h4>
+                            <Button v-if="form.indices.length < 1" type="button" @click="addIndice" class="!bg-yellow-400/10 !text-yellow-400 !border-none !rounded-xl !px-3 !py-2 hover:!bg-yellow-400/20 transition-all !flex !items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Ajouter</span>
+                            </Button>
+                        </div>
+
+                        <div v-if="form.indices.length > 0" class="grid grid-cols-1 gap-4">
+                            <div v-for="(indice, index) in form.indices.slice(0, 1)" :key="index" class="relative p-5 md:p-8 bg-[#F5DEB3] rounded-sm shadow-2xl border-x-4 border-amber-900/10 rotate-[-1deg] hover:rotate-0 transition-transform max-w-xl mx-auto w-full">
+                                <div class="absolute -top-2 -left-2 w-6 h-6 md:w-8 md:h-8 bg-amber-900 text-white rounded-full flex items-center justify-center text-[10px] font-black">#1</div>
+                                <button type="button" @click.prevent="removeIndice(index)" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 md:w-8 md:h-8 p-0 flex items-center justify-center shadow-lg transition-colors cursor-pointer border-2 border-[#F5DEB3]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+
+                                <textarea v-model="indice.contenu" rows="2" class="w-full bg-transparent border-none p-0 font-bold text-amber-900 placeholder:text-amber-900/40 focus:ring-0 italic text-sm md:text-base outline-none resize-none" placeholder="Écrivez l'indice ici..."></textarea>
+                                <div class="mt-4 flex items-center justify-between border-t border-amber-900/20 pt-3">
+                                    <span class="text-[8px] font-black uppercase text-amber-900/60 tracking-widest">Pénalité Points</span>
+                                    <input type="number" v-model="indice.penalite" class="w-12 md:w-16 bg-white/40 border-none rounded-lg text-xs font-black text-amber-900 p-1.5 focus:ring-0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- NIVEAU 3 : STANDARD AVEC INDICES -->
@@ -739,11 +762,11 @@ onMounted(() => {
                 </div>
 
                 <div class="pt-8 flex gap-4">
-                    <Button type="button" @click="visibleDetails = false; visible = true" class="!px-8 !py-4 !bg-white/5 !text-white/40 !border-none !rounded-xl hover:!text-white transition-colors">
-                         <span class="text-lg font-black italic uppercase tracking-widest">Retour</span>
+                    <Button type="button" @click="visibleDetails = false; visible = true" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-white/5 !text-white/40 !border-none !rounded-xl hover:!text-white transition-colors">
+                         <span class="text-sm md:text-lg font-black italic uppercase tracking-widest">Retour</span>
                     </Button>
-                    <Button type="submit" :loading="form.processing" class="flex-1 !py-4 !bg-yellow-400 !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform justify-center">
-                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Sceller le Destin</span>
+                    <Button type="submit" :loading="form.processing" class="flex-1 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform justify-center">
+                         <span class="text-sm md:text-lg font-black italic uppercase text-white tracking-widest">Sceller le Destin</span>
                     </Button>
                 </div>
             </form>
@@ -778,13 +801,31 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- NOTIFICATION MODAL -->
-        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4 pointer-events-none">
-            <div class="bg-white rounded-2xl px-6 md:px-8 py-3 md:py-4 shadow-2xl border-2 pointer-events-auto flex items-center gap-4 transition-all" :class="notifyModal.type === 'success' ? 'border-green-400 text-green-600' : 'border-red-400 text-red-600'">
-                <span class="font-black uppercase italic tracking-widest text-xs md:text-sm">{{ notifyModal.message }}</span>
-                <button @click="notifyModal.show = false" class="ml-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+        <!-- CUSTOM NOTIFICATION MODAL -->
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
+                 :class="notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : 'border-red-300 bg-gradient-to-br from-red-400 to-red-600'">
+                <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
+                    <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-slate-50 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
+                         :class="notifyModal.type === 'success' ? 'text-green-500' : 'text-red-500'">
+                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+
+                    <h3 class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
+                        :class="notifyModal.type === 'success' ? 'text-green-600' : 'text-red-600'">
+                        {{ notifyModal.title }}
+                    </h3>
+                    
+                    <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-3 md:py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 text-xs md:text-sm"
+                            :class="notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'">
+                        D'accord
+                    </button>
+                </div>
             </div>
         </div>
 

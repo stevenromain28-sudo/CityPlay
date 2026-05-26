@@ -395,11 +395,11 @@ onMounted(() => {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             </template>
                         </Button>
-                        <Link :href="route('admin.lieux.index')" class="p-3 md:p-4 bg-yellow-400 text-white rounded-xl md:rounded-2xl shadow-2xl shadow-yellow-400/40 hover:scale-110 transition-transform flex items-center">
+                        <Link :href="route('admin.lieux.index')" class="p-2.5 md:p-4 bg-yellow-400 text-white rounded-xl md:rounded-2xl shadow-2xl shadow-yellow-400/40 hover:scale-110 transition-transform flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 md:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <span class="font-black italic uppercase tracking-widest hidden md:inline">Gérer la carte</span>
                         </Link>
-                        <Link :href="route('admin.enigmes.index')" class="p-3 md:p-4 bg-purple-500 text-white rounded-xl md:rounded-2xl shadow-2xl shadow-purple-500/40 hover:scale-110 transition-transform flex items-center">
+                        <Link :href="route('admin.enigmes.index')" class="p-2.5 md:p-4 bg-purple-500 text-white rounded-xl md:rounded-2xl shadow-2xl shadow-purple-500/40 hover:scale-110 transition-transform flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 md:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                             <span class="font-black italic uppercase tracking-widest hidden md:inline">Gérer les énigmes</span>
                         </Link>
@@ -502,9 +502,12 @@ onMounted(() => {
                         <FileUpload mode="basic" name="banniere" accept="image/*" @select="onFileSelect" class="w-full" chooseLabel="Choisir un visuel" />
                     </div>
 
-                    <div class="pt-4">
-                        <Button type="submit" :loading="form.processing" class="w-full !py-4 md:!py-5 !bg-[#1DA1F2] !border-none !rounded-2xl !shadow-xl justify-center">
-                            <span class="text-lg md:text-xl font-black italic uppercase tracking-tighter text-white">Enregistrer</span>
+                    <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                        <Button type="submit" :loading="form.processing" class="flex-1 !py-3 md:!py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform justify-center">
+                             <span class="text-sm md:text-lg font-black italic uppercase text-white tracking-widest">{{ editingVilleId ? 'Enregistrer les Changements' : 'Fonder la Cité' }}</span>
+                        </Button>
+                        <Button v-if="editingVilleId" @click.prevent="deleteVille(editingVilleId)" class="sm:w-auto !px-6 !py-3 md:!py-4 !bg-red-500 hover:!bg-red-600 !border-none !rounded-xl !shadow-xl transition-colors justify-center">
+                             <span class="text-sm md:text-lg font-black italic uppercase text-white tracking-widest">Détruire</span>
                         </Button>
                     </div>
                 </form>
@@ -514,20 +517,25 @@ onMounted(() => {
         <!-- CUSTOM NOTIFICATION MODAL -->
         <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
-                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
+                 :class="notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : 'border-red-300 bg-gradient-to-br from-red-400 to-red-600'">
+                <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
+                    <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-slate-50 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
+                         :class="notifyModal.type === 'success' ? 'text-green-500' : 'text-red-500'">
+                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                    <h3 class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
+                        :class="notifyModal.type === 'success' ? 'text-green-600' : 'text-red-600'">
                         {{ notifyModal.title }}
                     </h3>
                     
-                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+                    <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
 
                     <button @click="notifyModal.show = false" 
-                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                            class="w-full py-3 md:py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 text-xs md:text-sm"
+                            :class="notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'">
                         D'accord
                     </button>
                 </div>
