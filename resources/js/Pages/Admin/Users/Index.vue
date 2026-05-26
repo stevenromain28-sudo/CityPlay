@@ -208,10 +208,10 @@ onMounted(() => {
                                 {{ pendingRequests.length }}
                             </span>
                         </button>
-                        <Button @click="openNew" class="!px-6 !py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl hover:scale-105 transition-transform flex items-center justify-center">
+                        <Button @click="openNew" class="!px-4 md:!px-6 !py-2.5 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-xl hover:scale-105 transition-transform flex items-center justify-center">
                             <template #default>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                                <span class="text-white font-black italic uppercase tracking-widest text-xs md:text-sm">Créer un Admin</span>
+                                <span class="text-white font-black italic uppercase tracking-widest text-[10px] md:text-sm">Créer un Admin</span>
                             </template>
                         </Button>
                     </div>
@@ -402,49 +402,25 @@ onMounted(() => {
         <!-- CUSTOM NOTIFICATION MODAL -->
         <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
-            <div 
-                class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
-                :class="[
-                    notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : '',
-                    notifyModal.type === 'error' ? 'border-red-300 bg-gradient-to-br from-red-400 to-red-600' : ''
-                ]"
-            >
-                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div 
-                        class="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
-                        :class="[
-                            notifyModal.type === 'success' ? 'bg-green-50 text-green-500' : '',
-                            notifyModal.type === 'error' ? 'bg-red-50 text-red-500' : ''
-                        ]"
-                    >
-                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-8 md:h-10 w-8 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <svg v-if="notifyModal.type === 'error'" xmlns="http://www.w3.org/2000/svg" class="h-8 md:h-10 w-8 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
+                 :class="notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : 'border-red-300 bg-gradient-to-br from-red-400 to-red-600'">
+                <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
+                    <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-slate-50 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
+                         :class="notifyModal.type === 'success' ? 'text-green-500' : 'text-red-500'">
+                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
 
-                    <h3 
-                        class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
-                        :class="[
-                            notifyModal.type === 'success' ? 'text-green-600' : '',
-                            notifyModal.type === 'error' ? 'text-red-600' : ''
-                        ]"
-                    >
+                    <h3 class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
+                        :class="notifyModal.type === 'success' ? 'text-green-600' : 'text-red-600'">
                         {{ notifyModal.title }}
                     </h3>
                     
                     <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
 
-                    <button 
-                        @click="notifyModal.show = false" 
-                        class="w-full py-3 md:py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 text-xs md:text-sm"
-                        :class="[
-                            notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : '',
-                            notifyModal.type === 'error' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : ''
-                        ]"
-                    >
+                    <button @click="notifyModal.show = false" 
+                            class="w-full py-3 md:py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 text-xs md:text-sm"
+                            :class="notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'">
                         D'accord
                     </button>
                 </div>

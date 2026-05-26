@@ -15,11 +15,18 @@ class Enigme extends Model
         'niveau',
         'ordre',
         'reponse',
+        'options',
         'latitude',
         'longitude',
         'rayon',
         'verification_gps',
         'is_bonus',
+    ];
+
+    protected $casts = [
+        'options' => 'array',
+        'verification_gps' => 'boolean',
+        'is_bonus' => 'boolean',
     ];
 
     public function lieu()

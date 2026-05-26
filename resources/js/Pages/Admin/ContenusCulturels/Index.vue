@@ -112,11 +112,17 @@ const editContenu = (contenu) => {
 const submit = () => {
     if (form.id) {
         form.post(route('admin.contenus-culturels.update', form.id), {
-            onSuccess: () => visible.value = false
+            onSuccess: () => {
+                visible.value = false;
+                triggerNotify('success', 'Savoir préservé', 'Les archives culturelles ont été mises à jour.');
+            }
         });
     } else {
         form.post(route('admin.contenus-culturels.store'), {
-            onSuccess: () => visible.value = false
+            onSuccess: () => {
+                visible.value = false;
+                triggerNotify('success', 'Savoir gravé', 'Une nouvelle chronique a été ajoutée aux archives.');
+            }
         });
     }
 };
@@ -204,10 +210,10 @@ onMounted(() => {
                         </p>
                     </div>
 
-                    <Button @click="openNew" class="!px-6 md:!px-8 !py-3 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
+                    <Button @click="openNew" class="!px-4 md:!px-8 !py-2.5 md:!py-4 !bg-yellow-400 !border-none !rounded-2xl !shadow-2xl !shadow-yellow-400/20 hover:!scale-105 transition-transform !flex !items-center w-full md:w-auto justify-center group">
                         <template #default>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
-                            <span class="text-white font-black italic uppercase tracking-widest text-sm md:text-lg">Nouveau Contenu</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 md:h-6 w-5 md:w-6 mr-2 md:mr-3 text-white group-hover:rotate-90 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M12 4v16m8-8H4" /></svg>
+                            <span class="text-white font-black italic uppercase tracking-widest text-xs md:text-lg">Nouveau Contenu</span>
                         </template>
                     </Button>
                 </div>
@@ -376,33 +382,38 @@ onMounted(() => {
                 </div>
 
                 <div class="pt-4 flex flex-col sm:flex-row gap-3">
-                    <Button v-if="form.id" type="button" @click="deleteContenu" class="!py-4 !bg-red-50 !text-red-500 !border-none !rounded-xl hover:!bg-red-100 transition-all flex-1 justify-center">
-                        <span class="text-lg font-black italic uppercase tracking-widest">Effacer</span>
+                    <Button v-if="form.id" type="button" @click="deleteContenu" class="!py-3 md:!py-4 !bg-red-50 !text-red-500 !border-none !rounded-xl hover:!bg-red-100 transition-all flex-1 justify-center">
+                        <span class="text-sm md:text-lg font-black italic uppercase tracking-widest">Effacer</span>
                     </Button>
-                    <Button type="submit" :loading="form.processing" class="!py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform flex-[2] justify-center">
-                         <span class="text-lg font-black italic uppercase text-white tracking-widest">Enregistrer</span>
+                    <Button type="submit" :loading="form.processing" class="!py-3 md:!py-4 !bg-[#1DA1F2] !border-none !rounded-xl !shadow-xl hover:!scale-[1.02] transition-transform flex-[2] justify-center">
+                         <span class="text-sm md:text-lg font-black italic uppercase text-white tracking-widest">Enregistrer</span>
                     </Button>
                 </div>
             </form>
         </Dialog>
 
         <!-- CUSTOM NOTIFICATION MODAL -->
-        <div v-if="notifyModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div v-if="notifyModal.show" class="fixed inset-0 z-[2002] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="notifyModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-green-300 bg-gradient-to-br from-green-400 to-green-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
-                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden"
+                 :class="notifyModal.type === 'success' ? 'border-green-300 bg-gradient-to-br from-green-400 to-green-600' : 'border-red-300 bg-gradient-to-br from-red-400 to-red-600'">
+                <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
+                    <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-slate-50 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10"
+                         :class="notifyModal.type === 'success' ? 'text-green-500' : 'text-red-500'">
+                        <svg v-if="notifyModal.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-green-600 mb-3 relative z-10">
+                    <h3 class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-3 relative z-10"
+                        :class="notifyModal.type === 'success' ? 'text-green-600' : 'text-red-600'">
                         {{ notifyModal.title }}
                     </h3>
                     
-                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
+                    <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ notifyModal.message }}</p>
 
                     <button @click="notifyModal.show = false" 
-                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all relative z-10">
+                            class="w-full py-3 md:py-4 text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all relative z-10 text-xs md:text-sm"
+                            :class="notifyModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/20' : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'">
                         D'accord
                     </button>
                 </div>
@@ -410,27 +421,27 @@ onMounted(() => {
         </div>
 
         <!-- CUSTOM CONFIRMATION MODAL -->
-        <div v-if="confirmModal.show" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div v-if="confirmModal.show" class="fixed inset-0 z-[2001] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-yellow-300 bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
-                <div class="bg-white rounded-[2.3rem] p-8 text-center relative overflow-hidden">
-                    <div class="w-20 h-20 mx-auto bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div class="relative w-full max-w-md bg-white rounded-[2.5rem] p-1 border-2 border-red-300 bg-gradient-to-br from-red-400 to-red-600 shadow-[0_30px_60px_rgba(0,0,0,0.2)] overflow-hidden">
+                <div class="bg-white rounded-[2.3rem] p-6 md:p-8 text-center relative overflow-hidden">
+                    <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 md:h-10 w-8 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </div>
 
-                    <h3 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-600 mb-3 relative z-10">
+                    <h3 class="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-red-600 mb-3 relative z-10">
                         {{ confirmModal.title }}
                     </h3>
                     
-                    <p class="text-slate-600 font-sans font-bold text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
+                    <p class="text-slate-600 font-sans font-bold text-xs md:text-sm mb-6 relative z-10 leading-relaxed">{{ confirmModal.message }}</p>
 
                     <div class="flex space-x-3 relative z-10">
                         <button @click="confirmModal.show = false" 
-                                class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all">
+                                class="flex-1 py-3 md:py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black uppercase tracking-widest transition-all text-xs md:text-sm">
                             Annuler
                         </button>
                         <button @click="confirmModal.onConfirm" 
-                                class="flex-1 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 hover:scale-105 active:scale-95 transition-all">
+                                class="flex-1 py-3 md:py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all text-xs md:text-sm">
                             Confirmer
                         </button>
                     </div>

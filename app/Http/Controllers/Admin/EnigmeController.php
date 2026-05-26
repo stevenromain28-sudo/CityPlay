@@ -74,6 +74,7 @@ class EnigmeController extends Controller
             'titre' => 'required|string|max:255',
             'contenu' => 'required|string',
             'reponse' => 'nullable|string',
+            'options' => 'nullable|array',
             'niveau' => 'required|integer|min:1|max:3',
             'ordre' => 'required|integer',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -119,13 +120,18 @@ class EnigmeController extends Controller
         }
         
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('enigmes/images', 'public');
-            $data['image'] = Storage::url($path);
+            $path = $request->file('image')->store('enigmes', 'public');
+            $data['image'] = '/storage/' . $path;
         }
 
         if ($request->hasFile('audio')) {
             $path = $request->file('audio')->store('enigmes/audio', 'public');
             $data['audio'] = Storage::url($path);
+        }
+        
+        // S'assurer que les options sont bien encodées en JSON si présentes
+        if (isset($data['options'])) {
+            $data['options'] = $data['options'];
         }
 
         $enigme = Enigme::create($data);
@@ -148,6 +154,7 @@ class EnigmeController extends Controller
             'titre' => 'required|string|max:255',
             'contenu' => 'required|string',
             'reponse' => 'nullable|string',
+            'options' => 'nullable|array',
             'niveau' => 'required|integer|min:1|max:3',
             'ordre' => 'required|integer',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -182,12 +189,12 @@ class EnigmeController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            if ($enigme->image && !str_contains($enigme->image, 'backgrounds')) {
+            if ($enigme->image) {
                 $oldPath = str_replace('/storage/', '', $enigme->image);
                 Storage::disk('public')->delete($oldPath);
             }
-            $path = $request->file('image')->store('enigmes/images', 'public');
-            $data['image'] = Storage::url($path);
+            $path = $request->file('image')->store('enigmes', 'public');
+            $data['image'] = '/storage/' . $path;
         }
 
         if ($request->hasFile('audio')) {

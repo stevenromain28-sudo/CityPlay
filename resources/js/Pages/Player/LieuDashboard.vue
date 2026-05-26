@@ -125,7 +125,7 @@ onMounted(() => {
                         </span>
                         
                         <h3 class="text-3xl md:text-5xl font-black italic uppercase text-purple-950 tracking-tight leading-none">
-                            {{ deja_complete ? lieu.nom : 'LIEU MYSTÈRE' }}
+                            LIEU MYSTÈRE
                         </h3>
                         <div class="w-32 h-1 bg-yellow-500 mx-auto mt-4 rounded-full"></div>
                     </div>
@@ -161,7 +161,7 @@ onMounted(() => {
                                     </div>
                                     
                                     <h5 class="text-2xl font-black italic uppercase text-purple-950 leading-tight group-hover:text-purple-700 transition-colors">
-                                        {{ enigme.titre }}
+                                        INTITULE
                                     </h5>
                                     
                                     <p class="text-slate-700 text-sm font-bold leading-relaxed line-clamp-3 italic">
