@@ -574,7 +574,7 @@ class PlayerController extends Controller
         $nouvelleSession = $request->input('nouvelle_session', false);
         $enigmeId = $request->input('enigme_id');
 
-        // 1. Si l'utilisateur demande une NOUVELLE SESSION : terminer toutes les sessions existantes !
+        // 1. Si l'utilisateur demande une NOUVELLE SESSION : terminer toutes les sessions existantes et nettoyer les données !
         if ($nouvelleSession) {
             // Terminer toutes les sessions de l'utilisateur (solo ou équipe)
             SessionJeu::whereHas('joueurs', function ($q) use ($user) {
@@ -587,6 +587,26 @@ class PlayerController extends Controller
                 SessionJeu::where('equipe_id', $equipe->id)
                     ->whereIn('statut', ['actif', 'en_attente', 'pause', 'temps_epuise'])
                     ->update(['statut' => 'termine', 'termine_le' => now()]);
+            }
+
+            // --- NETTOYAGE DES DONNÉES DE JEU PRÉCÉDENTES ---
+            // Supprimer les tentatives réussies pour que les énigmes redeviennent jouables
+            TentativeEnigme::where('user_id', $user->id)->delete();
+            
+            // Supprimer les progressions (textuelles et GPS)
+            ProgressionEnigme::where('user_id', $user->id)->delete();
+            
+            // Supprimer les indices débloqués
+            IndiceDebloque::where('user_id', $user->id)->delete();
+
+            if ($equipe) {
+                // Si en équipe, nettoyer aussi les données liées à l'équipe
+                ProgressionEnigme::where('equipe_id', $equipe->id)->delete();
+                
+                // Nettoyer les tentatives de tous les membres de l'équipe
+                $membresIds = $equipe->membres->pluck('id');
+                TentativeEnigme::whereIn('user_id', $membresIds)->delete();
+                IndiceDebloque::whereIn('user_id', $membresIds)->delete();
             }
         }
 

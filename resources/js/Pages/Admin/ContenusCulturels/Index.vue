@@ -112,11 +112,17 @@ const editContenu = (contenu) => {
 const submit = () => {
     if (form.id) {
         form.post(route('admin.contenus-culturels.update', form.id), {
-            onSuccess: () => visible.value = false
+            onSuccess: () => {
+                visible.value = false;
+                triggerNotify('success', 'Savoir préservé', 'Les archives culturelles ont été mises à jour.');
+            }
         });
     } else {
         form.post(route('admin.contenus-culturels.store'), {
-            onSuccess: () => visible.value = false
+            onSuccess: () => {
+                visible.value = false;
+                triggerNotify('success', 'Savoir gravé', 'Une nouvelle chronique a été ajoutée aux archives.');
+            }
         });
     }
 };

@@ -57,6 +57,9 @@ const changerLieu = () => {
 watch(() => props.enigme, (newEnigme) => {
     if (newEnigme) {
         reponseTextuelle.value = '';
+        selectedOption.value = null;
+        shuffleOptions();
+        initPuzzle();
         localUnlockedIndices.value = props.indices_debloques;
         unlockedIndicesContent.value = {};
         localProgression.value = props.progression;
@@ -77,6 +80,64 @@ watch(() => props.joueur_score, (newScore) => {
 const isTextValidated = computed(() => !!localProgression.value?.text_validated_at);
 const isGpsValidated = computed(() => !!localProgression.value?.gps_validated_at);
 const showBonusChoice = ref(false);
+const shuffledOptions = ref([]);
+const selectedOption = ref(null);
+
+// --- LOGIQUE NIVEAU 2 : PUZZLE ---
+const puzzleLetters = ref([]);
+const puzzleSlots = ref([]);
+const isPuzzleComplete = computed(() => puzzleSlots.value.every(slot => slot !== null));
+
+const initPuzzle = () => {
+    if (props.enigme?.niveau === 2 && props.enigme.reponse) {
+        const word = props.enigme.reponse.toUpperCase();
+        puzzleLetters.value = word.split('').map((char, index) => ({
+            id: index,
+            char: char,
+            isUsed: false
+        })).sort(() => Math.random() - 0.5);
+        puzzleSlots.value = new Array(word.length).fill(null);
+    }
+};
+
+const handleLetterClick = (letter) => {
+    if (letter.isUsed) return;
+    const firstEmptySlot = puzzleSlots.value.indexOf(null);
+    if (firstEmptySlot !== -1) {
+        puzzleSlots.value[firstEmptySlot] = letter;
+        letter.isUsed = true;
+    }
+};
+
+const removeLetterFromSlot = (index) => {
+    const letter = puzzleSlots.value[index];
+    if (letter) {
+        letter.isUsed = false;
+        puzzleSlots.value[index] = null;
+    }
+};
+
+const checkPuzzleResponse = () => {
+    const response = puzzleSlots.value.map(slot => slot?.char).join('');
+    if (response === props.enigme.reponse.toUpperCase()) {
+        soumettreReponse(response);
+    } else {
+        showModal('error', 'Faux !', "Le mot n'est pas correct. Réessayez !");
+        // Optionnel: reset le puzzle
+        puzzleSlots.value = puzzleSlots.value.map(slot => {
+            if (slot) slot.isUsed = false;
+            return null;
+        });
+    }
+};
+// --------------------------------
+
+// Mélanger les options pour le Niveau 1 (QCM)
+const shuffleOptions = () => {
+    if (props.enigme?.niveau === 1 && props.enigme.options) {
+        shuffledOptions.value = [...props.enigme.options].sort(() => Math.random() - 0.5);
+    }
+};
 
 // Gestion du Temps (Déléguée au PlayerLayout)
 const tempsRestant = computed(() => props.session.temps_restant);
@@ -221,6 +282,8 @@ const faireChoixBonus = (wantsBonus) => {
 
 onMounted(() => {
     gameStore.setSession(props.session);
+    shuffleOptions();
+    initPuzzle();
     if (props.enigme) {
         gameStore.enigmeActive = props.enigme;
         
@@ -315,15 +378,17 @@ const validerGPS = () => {
     }
 };
 
-const soumettreReponse = async () => {
-    if (!reponseTextuelle.value.trim()) return;
+const soumettreReponse = async (reponseForcee = null) => {
+    const reponse = reponseForcee || (props.enigme.niveau === 1 ? selectedOption.value : reponseTextuelle.value);
+    if (!reponse || !reponse.trim()) return;
+    
     loading.value = true;
     try {
         const response = await axios.post(route('player.game.submit.answer', {
             session: props.session.id,
             enigme: props.enigme.id
         }), {
-            reponse: reponseTextuelle.value
+            reponse: reponse
         });
         loading.value = false;
         if (response.data.success) {
@@ -382,7 +447,8 @@ const isIndiceUnlocked = (indiceId) => {
                         <span class="text-yellow-400 text-xs font-black uppercase tracking-[0.3em] mt-4 drop-shadow">LIEU À RECONNAÎTRE</span>
                     </div>
                     
-                    <img v-else :src="enigme.image || 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800'"
+                    <!-- Image révélée (soit l'image de l'énigme, soit celle du lieu) -->
+                    <img v-else :src="enigme.image || enigme.lieu?.image_principale || 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800'"
                          class="w-full h-full object-cover border-b-4 border-yellow-500 shadow-lg">
                          
                     <div class="absolute top-6 left-6 flex flex-col gap-3">
@@ -397,6 +463,7 @@ const isIndiceUnlocked = (indiceId) => {
 
                 <!-- Section de Contenu -->
                 <div class="p-8 md:p-12 relative z-10 space-y-8">
+
                     <!-- Titre Secret ou Révélé -->
                     <div class="text-center">
                         <h2 v-if="!isTextValidated && !enigme.is_bonus" 
@@ -405,18 +472,11 @@ const isIndiceUnlocked = (indiceId) => {
                         </h2>
                         <h2 v-else 
                             class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-purple-950 drop-shadow-sm leading-none">
-                            {{ enigme.titre }}
+                            {{ enigme.lieu?.nom || enigme.titre }}
                         </h2>
                         <div class="w-24 h-1 bg-yellow-500 mx-auto mt-4 rounded-full"></div>
                     </div>
-
-                    <!-- Grimoire text / Énoncé de l'Énigme -->
-                    <div class="prose prose-slate max-w-none">
-                        <p class="text-lg md:text-2xl font-bold text-slate-800 leading-relaxed italic bg-yellow-50/50 p-6 rounded-2xl border border-yellow-200/80 shadow-inner text-center">
-                            " {{ enigme.contenu }} "
-                        </p>
-                    </div>
-
+                    
                     <!-- Actions Principales (Étapes de validation) -->
                     <div class="space-y-6">
                         
@@ -430,18 +490,101 @@ const isIndiceUnlocked = (indiceId) => {
                             </button>
                         </div>
 
-                        <!-- Réponse textuelle (Étape 1) -->
-                        <div v-if="!isTextValidated" 
-                             class="p-6 md:p-8 rounded-2xl border-2 border-yellow-300 bg-gradient-to-b from-yellow-50/40 to-yellow-100/30 shadow-inner space-y-4">
-                            <div class="text-center">
-                                <h3 class="text-xl font-black italic uppercase text-purple-900">RÉSOUDRE LE MYSTÈRE</h3>
-                                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Saisissez le mot-clé pour révéler l'identité du lieu</p>
+                        <!-- Réponse textuelle (Étape 1 - Niveau 1 QCM) -->
+                        <div v-if="!isTextValidated && enigme.niveau === 1" 
+                             class="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            
+                            <!-- Boîte d'Énigme Centrale -->
+                            <div class="bg-[#3D1A1A] rounded-[2rem] p-8 md:p-12 border-4 border-[#8B4513] shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-8 h-8 bg-white/10 rounded-br-3xl"></div>
+                                <div class="absolute top-0 right-0 w-8 h-8 bg-white/10 rounded-bl-3xl"></div>
+                                <div class="absolute bottom-0 left-0 w-8 h-8 bg-white/10 rounded-tr-3xl"></div>
+                                <div class="absolute bottom-0 right-0 w-8 h-8 bg-white/10 rounded-tl-3xl"></div>
+                                
+                                <p class="text-white text-xl md:text-3xl font-black text-center leading-relaxed tracking-tight">
+                                    {{ enigme.contenu }}
+                                </p>
                             </div>
 
-                            <div class="relative max-w-xl mx-auto">
+                            <!-- Options de Choix A, B, C, D -->
+                            <div class="grid grid-cols-2 gap-4 md:gap-8">
+                                <button v-for="(option, index) in shuffledOptions" :key="index"
+                                        @click="selectedOption = option"
+                                        class="relative pt-8 pb-6 px-4 rounded-3xl border-4 transition-all duration-300 transform group"
+                                        :class="selectedOption === option 
+                                            ? 'bg-yellow-400 border-white scale-105 shadow-[0_0_30px_rgba(250,204,21,0.4)]' 
+                                            : 'bg-[#8B4513] border-[#5D2E0C] hover:scale-[1.02] shadow-xl'">
+                                    
+                                    <!-- Badge Lettre (A, B, C, D) -->
+                                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                                        <div class="w-10 h-10 rounded-full border-4 flex items-center justify-center font-black text-lg"
+                                             :class="selectedOption === option ? 'bg-white text-yellow-600 border-yellow-200' : 'bg-[#D2691E] text-white border-[#8B4513]'">
+                                            {{ ['A', 'B', 'C', 'D'][index] }}
+                                        </div>
+                                    </div>
+
+                                    <span class="block text-center font-black uppercase tracking-tight text-sm md:text-lg leading-tight"
+                                          :class="selectedOption === option ? 'text-red-800' : 'text-yellow-400'">
+                                        {{ option }}
+                                    </span>
+                                </button>
+                            </div>
+
+                            <button @click="soumettreReponse()" :disabled="loading || !selectedOption"
+                                    class="w-full py-5 rpg-btn-yellow text-red-800 rounded-2xl font-black text-xl uppercase tracking-widest shadow-xl disabled:opacity-50">
+                                Valider ma réponse
+                            </button>
+                        </div>
+
+                        <!-- Réponse textuelle (Étape 1 - Niveau 2 Puzzle) -->
+                        <div v-if="!isTextValidated && enigme.niveau === 2" 
+                             class="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            
+                            <!-- Énoncé -->
+                            <div class="bg-yellow-50/50 p-6 rounded-2xl border border-yellow-200/80 shadow-inner text-center">
+                                <p class="text-lg md:text-xl font-bold text-slate-800 italic">" {{ enigme.contenu }} "</p>
+                            </div>
+
+                            <!-- Lettres disponibles -->
+                            <div class="flex flex-wrap justify-center gap-3">
+                                <button v-for="letter in puzzleLetters" :key="letter.id"
+                                        @click="handleLetterClick(letter)"
+                                        :disabled="letter.isUsed"
+                                        class="w-12 h-12 md:w-16 md:h-16 bg-[#8B4513] border-4 border-[#5D2E0C] rounded-xl flex items-center justify-center shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                                        :class="letter.isUsed ? 'opacity-20 scale-90 grayscale' : 'opacity-100'">
+                                    <span class="text-yellow-400 font-black text-xl md:text-2xl">{{ letter.char }}</span>
+                                </button>
+                            </div>
+
+                            <!-- Zones de dépôt (Slots) -->
+                            <div class="flex flex-wrap justify-center gap-2 py-6 border-y-2 border-purple-200/30">
+                                <div v-for="(slot, index) in puzzleSlots" :key="index"
+                                     @click="removeLetterFromSlot(index)"
+                                     class="w-12 h-12 md:w-16 md:h-16 border-4 border-dashed border-purple-300 rounded-xl flex items-center justify-center transition-all"
+                                     :class="slot ? 'bg-yellow-400 border-white shadow-lg cursor-pointer' : 'bg-purple-900/5'">
+                                    <span v-if="slot" class="text-red-800 font-black text-xl md:text-2xl">{{ slot.char }}</span>
+                                </div>
+                            </div>
+
+                            <button @click="checkPuzzleResponse" :disabled="loading || !isPuzzleComplete"
+                                    class="w-full py-5 rpg-btn-yellow text-red-800 rounded-2xl font-black text-xl uppercase tracking-widest shadow-xl disabled:opacity-50">
+                                Sceller le mot magique
+                            </button>
+                        </div>
+
+                        <!-- Réponse textuelle (Étape 1 - Niveau 3 Classique) -->
+                        <div v-if="!isTextValidated && enigme.niveau === 3" 
+                             class="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            
+                            <!-- Énoncé -->
+                            <div class="bg-yellow-50/50 p-6 rounded-2xl border border-yellow-200/80 shadow-inner text-center">
+                                <p class="text-lg md:text-xl font-bold text-slate-800 italic">" {{ enigme.contenu }} "</p>
+                            </div>
+
+                            <div class="relative max-w-xl mx-auto w-full">
                                 <input v-model="reponseTextuelle" type="text" placeholder="VOTRE RÉPONSE ICI..."
                                        class="w-full bg-yellow-50/70 border-2 border-yellow-400/50 rounded-xl py-5 px-8 text-sm md:text-base font-bold tracking-widest text-purple-950 focus:ring-4 focus:ring-purple-400/30 focus:border-purple-600 transition-all placeholder:text-purple-950/20 shadow-inner">
-                                <button @click="soumettreReponse" :disabled="loading"
+                                <button @click="soumettreReponse()" :disabled="loading"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rpg-btn-yellow text-white rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg">
                                     <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
@@ -495,7 +638,7 @@ const isIndiceUnlocked = (indiceId) => {
                                 BESOIN D'UNE PAROLE SAGE ?
                             </h3>
                             <div class="space-y-4 max-w-2xl mx-auto">
-                                <div v-for="(indice, index) in enigme.indices" :key="indice.id" class="relative">
+                                <div v-for="(indice, index) in (enigme.niveau === 2 ? enigme.indices.slice(0, 1) : enigme.indices)" :key="indice.id" class="relative">
                                     <!-- Indice Débloqué -->
                                     <div v-if="isIndiceUnlocked(indice.id)" class="p-6 bg-yellow-50/50 rounded-xl border-2 border-yellow-300 shadow-inner">
                                         <p class="text-purple-900 text-xs font-black uppercase tracking-widest mb-2">Message révélé — Indice {{ index + 1 }}</p>
